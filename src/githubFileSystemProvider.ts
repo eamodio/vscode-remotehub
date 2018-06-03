@@ -2,6 +2,7 @@
 import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemError, FileSystemProvider, FileType, Uri, workspace } from 'vscode';
 import { configuration, IConfig } from './configuration';
 import { GraphQLClient } from 'graphql-request';
+import { Logger } from './logger';
 import * as https from 'https';
 
 export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
@@ -42,13 +43,16 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     async stat(uri: Uri): Promise<FileStat> {
         if (uri.path === '' || uri.path.lastIndexOf('/') === 0) return { type: FileType.Directory, size: 0, ctime: 0, mtime: 0 };
 
-        const data = await this.query<{ __typename: string, byteSize: number | undefined }>(`__typename
-        ...on Blob {
-            byteSize
-        }`, this.variables(uri));
+        const data = await this.query<{ __typename: string, byteSize: number | undefined }>(
+            `__typename
+            ...on Blob {
+                byteSize
+            }`,
+            GitHubFileSystemProvider.uriToQueryVariables(uri)
+        );
 
         return {
-            type: this.typeToFileType(data && data.__typename),
+            type: GitHubFileSystemProvider.typeToFileType(data && data.__typename),
             size: (data && data.byteSize) || 0,
             ctime: 0,
             mtime: 0
@@ -56,15 +60,18 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readDirectory(uri: Uri): Promise<[string, FileType][]> {
-        const data = await this.query<{ entries: { name: string, type: string }[] }>(`... on Tree {
-            entries {
-              name
-              type
-            }
-        }`, this.variables(uri));
+        const data = await this.query<{ entries: { name: string, type: string }[] }>(
+            `... on Tree {
+                entries {
+                name
+                type
+                }
+            }`,
+            GitHubFileSystemProvider.uriToQueryVariables(uri)
+        );
 
         return ((data && data.entries) || [])
-            .map<[string, FileType]>(e => [e.name, this.typeToFileType(e.type)]);
+            .map<[string, FileType]>(e => [e.name, GitHubFileSystemProvider.typeToFileType(e.type)]);
     }
 
     createDirectory(): void | Thenable<void> {
@@ -72,37 +79,30 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readFile(uri: Uri): Promise<Uint8Array> {
-        const data = await this.query<{ isBinary: boolean, text: string }>(`... on Blob { isBinary, text }`, this.variables(uri));
+        const data = await this.query<{ isBinary: boolean, text: string }>(
+            `... on Blob {
+                isBinary,
+                text
+            }`,
+            GitHubFileSystemProvider.uriToQueryVariables(uri)
+        );
 
         let buffer;
         if (data && data.isBinary) {
-            const chunks: Buffer[] = [];
-            buffer = await new Promise<Buffer>(resolve => {
-                const owner = uri.authority;
-                const [, repo, ...rest] = uri.path.split('/');
-                const path = `/HEAD/${rest.join('/')}`;
+            const owner = uri.authority;
+            const [, repo, ...rest] = uri.path.split('/');
+            const path = `/HEAD/${rest.join('/')}`;
 
-                // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
-                const downloadUri = uri.with({ scheme: 'https', authority: 'raw.githubusercontent.com', path: `/${owner}/${repo}${path}` });
+            // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
+            const downloadUri = uri.with({ scheme: 'https', authority: 'raw.githubusercontent.com', path: `/${owner}/${repo}${path}` });
 
-                https.get(downloadUri.toString(), rsp => {
-                    rsp.setEncoding('binary');
-
-                    rsp.on('data', chunk => {
-                        return chunks.push(typeof chunk === 'string' ? Buffer.from(chunk, 'binary') : chunk);
-                    });
-
-                    rsp.on('end', () => {
-                        resolve(Buffer.concat(chunks));
-                    });
-                });
-            });
+            buffer = await GitHubFileSystemProvider.downloadBinary(downloadUri);
         }
         else {
             buffer = Buffer.from((data && data.text) || '');
         }
 
-        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
+        return GitHubFileSystemProvider.bufferToUint8Array(buffer);
 }
 
     writeFile(): void | Thenable<void> {
@@ -135,23 +135,34 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
             return rsp.repository.object;
         }
         catch (ex) {
-            debugger;
+            Logger.error(ex);
             return undefined;
         }
     }
 
-    private variables(uri: Uri): QueryVariables {
-        const [, repo, ...rest] = uri.path.split('/');
-        const path = `HEAD:${rest.join('/')}`;
-
-        return {
-            owner: uri.authority,
-            repo: repo,
-            path: path
-        };
+    private static bufferToUint8Array(buffer: Buffer): Uint8Array {
+        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
     }
 
-    private typeToFileType(type: string | undefined | null) {
+    private static async downloadBinary(uri: Uri) {
+        return new Promise<Buffer>(resolve => {
+            const chunks: Buffer[] = [];
+
+            https.get(uri.toString(), rsp => {
+                rsp.setEncoding('binary');
+
+                rsp.on('data', chunk => {
+                    return chunks.push(typeof chunk === 'string' ? Buffer.from(chunk, 'binary') : chunk);
+                });
+
+                rsp.on('end', () => {
+                    resolve(Buffer.concat(chunks));
+                });
+            });
+        });
+    }
+
+    private static typeToFileType(type: string | undefined | null) {
         if (type) {
             type = type.toLocaleLowerCase();
         }
@@ -161,6 +172,17 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
             case 'tree': return FileType.Directory;
             default: return FileType.Unknown;
         }
+    }
+
+    private static uriToQueryVariables(uri: Uri): QueryVariables {
+        const [, repo, ...rest] = uri.path.split('/');
+        const path = `HEAD:${rest.join('/')}`;
+
+        return {
+            owner: uri.authority,
+            repo: repo,
+            path: path
+        };
     }
 }
 
