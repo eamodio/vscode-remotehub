@@ -43,6 +43,6 @@ export class Commands extends Disposable {
         if (workspace.workspaceFolders === undefined || workspace.workspaceFolders.length === 0) {
             return workspace.updateWorkspaceFolders(0, 0, { uri, name });
         }
-        return workspace.updateWorkspaceFolders(0, 1, { uri, name });
+        return workspace.updateWorkspaceFolders(0, workspace.workspaceFolders.length, { uri, name });
     }
 }
