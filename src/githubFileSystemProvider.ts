@@ -22,7 +22,7 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         });
 
         this._disposable = Disposable.from(
-            workspace.registerFileSystemProvider('remote-github', this, { isCaseSensitive: true })
+            workspace.registerFileSystemProvider('remotehub', this, { isCaseSensitive: true })
         );
     }
 

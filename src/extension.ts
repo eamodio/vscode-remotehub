@@ -1,7 +1,7 @@
 'use strict';
 
-export const extensionId = 'remote-github';
-export const extensionOutputChannelName = 'Remote GitHub';
+export const extensionId = 'remotehub';
+export const extensionOutputChannelName = 'RemoteHub';
 export const qualifiedExtensionId = `eamodio.${extensionId}`;
 
 import { ExtensionContext } from 'vscode';

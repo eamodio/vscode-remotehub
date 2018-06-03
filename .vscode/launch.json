@@ -6,7 +6,7 @@
 	"version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Remote GitHub",
+            "name": "Launch RemoteHub",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -17,7 +17,7 @@
             "preLaunchTask": "watch"
         },
         {
-            "name": "Build & Launch Remote GitHub",
+            "name": "Build & Launch RemoteHub",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",

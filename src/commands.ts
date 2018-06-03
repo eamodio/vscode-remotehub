@@ -36,7 +36,7 @@ export class Commands extends Disposable {
         const uri = Uri.parse(result.toLocaleLowerCase());
         const [, owner, repo] = uri.path.split('/');
 
-        this.openWorkspace(Uri.parse(`remote-github://${owner}/${repo}`), `github.com/${owner}/${repo}`);
+        this.openWorkspace(Uri.parse(`remotehub://${owner}/${repo}`), `github.com/${owner}/${repo}`);
     }
 
     openWorkspace(uri: Uri, name?: string) {

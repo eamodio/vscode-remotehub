@@ -1,22 +1,27 @@
-# Remote Github
+# RemoteHub
 
-This is the README for your extension "remote-github". After writing up a brief description, we recommend including the following sections.
+RemoteHub is a proof-of-concept extension that allows for remotely browsing a GitHub repository.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- Adds a `Open GitHub Repository` command (`remotehub.openRepository`) to open a remote GitHub repository for browsing
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### Generate a GitHub personal access token
 
-## Remote Github Settings
+RemoteHub requires a personal access token to authenticate to GitHub’s GraphQL API. [Follow the steps](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) in the GitHub guide, enabling the following scopes:
+
+![Generate Token](images\generate-token.png)
+
+Copy the generated access token to your clipboard and paste it into the input box or into your `settings.json` as follows:
+```json
+    "remotehub.token": "<your-token-here>"
+```
+
+## RemoteHub Settings
 
 |Name | Description
 |-----|------------
+|`remotehub.token`|Specifies GitHub personal access token to use for authentication with the GitHub GraphQL API
+|`remotehub.traceLevel`|Specifies how much (if any) output will be sent to the RemoteHub output channel

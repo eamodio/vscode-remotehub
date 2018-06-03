@@ -1,5 +1,5 @@
 {
-    "name": "remote-github",
+    "name": "remotehub",
     "version": "0.0.1",
     "author": {
         "name": "Eric Amodio",
@@ -10,7 +10,7 @@
         "vscode": "^1.23.0"
     },
     "license": "SEE LICENSE IN LICENSE",
-    "displayName": "Remote GitHub",
+    "displayName": "RemoteHub",
     "description": "",
     "categories": [
         "Other"
@@ -18,38 +18,32 @@
     "keywords": [
         "github"
     ],
-    "icon": "images/remote-github-icon.png",
-    "preview": false,
-    "homepage": "https://github.com/eamodio/vscode-remote-github/blob/master/README.md",
+    "icon": "images/remotehub-icon.png",
+    "preview": true,
+    "homepage": "https://github.com/eamodio/vscode-remotehub/blob/master/README.md",
     "bugs": {
-        "url": "https://github.com/eamodio/vscode-remote-github/issues"
+        "url": "https://github.com/eamodio/vscode-remotehub/issues"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/eamodio/vscode-remote-github.git"
+        "url": "https://github.com/eamodio/vscode-remotehub.git"
     },
     "main": "./out/extension",
     "activationEvents": [
-        "onFileSystem:remote-github",
-        "onCommand:remote-github.openRepository"
+        "onFileSystem:remotehub",
+        "onCommand:remotehub.openRepository"
     ],
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "Remote GitHub configuration",
+            "title": "RemoteHub configuration",
             "properties": {
-                "remote-github.debug": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specifies debug mode",
-                    "scope": "window"
-                },
-                "remote-github.token": {
+                "remotehub.token": {
                     "type": "string",
-                    "description": "Specifies GitHub token to use",
+                    "description": "Specifies GitHub personal access token to use for authentication with the GitHub GraphQL API",
                     "scope": "window"
                 },
-                "remote-github.traceLevel": {
+                "remotehub.traceLevel": {
                     "type": "string",
                     "default": "debug",
                     "enum": [
@@ -58,16 +52,16 @@
                         "verbose",
                         "debug"
                     ],
-                    "description": "Specifies how much (if any) output will be sent to the Remote GitHub output channel",
+                    "description": "Specifies how much (if any) output will be sent to the RemoteHub output channel",
                     "scope": "window"
                 }
             }
         },
         "commands": [
             {
-                "command": "remote-github.openRepository",
+                "command": "remotehub.openRepository",
                 "title": "Open GitHub Repository",
-                "category": "Remote GitHub"
+                "category": "RemoteHub"
             }
         ]
     },
