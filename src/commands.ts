@@ -4,6 +4,8 @@ import { Command, createCommandDecorator } from './system';
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
 
+const urlRegex = /^https:\/\/github.com\/.+?\/.+/;
+
 export class Commands extends Disposable {
 
     private readonly _disposable: Disposable;
@@ -25,9 +27,7 @@ export class Commands extends Disposable {
         const result = await window.showInputBox({
             placeHolder: 'e.g. https://github.com/eamodio/vscode-gitlens',
             prompt: 'Enter a GitHub repository url',
-            validateInput: () => {
-                return undefined;
-            },
+            validateInput: (value: string) => urlRegex.test(value) ? undefined : 'Must be a valid GitHub url',
             ignoreFocusOut: true
         });
 
