@@ -1,5 +1,6 @@
-import { commands, Disposable, Uri, window, workspace } from 'vscode';
+import { commands, ConfigurationTarget, Disposable, Uri, window, workspace } from 'vscode';
 import { Command, createCommandDecorator } from './system';
+import { configuration, IConfig } from './configuration';
 
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
@@ -24,6 +25,11 @@ export class Commands extends Disposable {
 
     @command('openRepository')
     async openRepository() {
+        const cfg = configuration.get<IConfig>();
+        if (!cfg.token) {
+            if (!(await this.updateToken())) return;
+        }
+
         const result = await window.showInputBox({
             placeHolder: 'e.g. https://github.com/eamodio/vscode-gitlens',
             prompt: 'Enter a GitHub repository url',
@@ -37,6 +43,21 @@ export class Commands extends Disposable {
         const [, owner, repo] = uri.path.split('/');
 
         this.openWorkspace(Uri.parse(`remotehub://${owner}/${repo}`), `github.com/${owner}/${repo}`);
+    }
+
+    async updateToken() {
+        const token = await window.showInputBox({
+            placeHolder: 'Generate a personal access token from github.com',
+            prompt: 'Enter a GitHub personal access token',
+            validateInput: (value: string) => value ? undefined : 'Must be a valid GitHub personal access token',
+            ignoreFocusOut: true
+        });
+
+        if (token) {
+            await configuration.update(configuration.name('token').value, token, ConfigurationTarget.Global);
+            return true;
+        }
+        return false;
     }
 
     openWorkspace(uri: Uri, name?: string) {
