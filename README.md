@@ -12,7 +12,7 @@ RemoteHub is a proof-of-concept extension that allows for remotely browsing a Gi
 
 RemoteHub requires a personal access token to authenticate to GitHub’s GraphQL API. [Follow the steps](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) in the GitHub guide, enabling the following scopes:
 
-![Generate Token](images\generate-token.png)
+![Generate Token](https://raw.githubusercontent.com/eamodio/vscode-remotehub/master/images/generate-token.png)
 
 Copy the generated access token to your clipboard and paste it into the input box or into your `settings.json` as follows:
 ```json
