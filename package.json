@@ -1,0 +1,97 @@
+{
+    "name": "remote-github",
+    "version": "0.0.1",
+    "author": {
+        "name": "Eric Amodio",
+        "email": "eamodio@gmail.com"
+    },
+    "publisher": "eamodio",
+    "engines": {
+        "vscode": "^1.23.0"
+    },
+    "license": "SEE LICENSE IN LICENSE",
+    "displayName": "Remote GitHub",
+    "description": "",
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "github"
+    ],
+    "icon": "images/remote-github-icon.png",
+    "preview": false,
+    "homepage": "https://github.com/eamodio/vscode-remote-github/blob/master/README.md",
+    "bugs": {
+        "url": "https://github.com/eamodio/vscode-remote-github/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/eamodio/vscode-remote-github.git"
+    },
+    "main": "./out/extension",
+    "activationEvents": [
+        "onFileSystem:remote-github",
+        "onCommand:remote-github.openRepository"
+    ],
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Remote GitHub configuration",
+            "properties": {
+                "remote-github.debug": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Specifies debug mode",
+                    "scope": "window"
+                },
+                "remote-github.token": {
+                    "type": "string",
+                    "description": "Specifies GitHub token to use",
+                    "scope": "window"
+                },
+                "remote-github.traceLevel": {
+                    "type": "string",
+                    "default": "debug",
+                    "enum": [
+                        "silent",
+                        "errors",
+                        "verbose",
+                        "debug"
+                    ],
+                    "description": "Specifies how much (if any) output will be sent to the Remote GitHub output channel",
+                    "scope": "window"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "remote-github.openRepository",
+                "title": "Open GitHub Repository",
+                "category": "Remote GitHub"
+            }
+        ]
+    },
+    "scripts": {
+        "build": "npm run lint && tsc -m commonjs -p ./",
+        "clean": "git clean -Xdf",
+        "lint": "tslint --project tsconfig.json",
+        "pack": "vsce package",
+        "pub": "vsce publish",
+        "rebuild": "npm run reset && npm run lint && tsc -m commonjs -p ./",
+        "reset": "npm run clean && npm install --no-save",
+        "watch": "tsc -watch -m commonjs -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "vscode:prepublish": "npm run compile"
+    },
+    "dependencies": {
+        "graphql-request": "^1.6.0",
+        "tslib": "1.9.2"
+    },
+    "devDependencies": {
+        "@types/node": "^10.3.0",
+        "@types/node-fetch": "^2.1.1",
+        "tslint": "^5.10.0",
+        "typescript": "^2.9.1",
+        "vscode": "^1.1.18"
+    }
+}

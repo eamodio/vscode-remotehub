@@ -1,0 +1,12 @@
+.vscode/**
+.vscode-test/**
+test/**
+*.map
+src/**
+.github/**
+.gitignore
+CODE_OF_CONDUCT.md
+package-lock.json
+tsconfig.json
+tslint.json
+webpack.config.js
