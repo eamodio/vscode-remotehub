@@ -8,7 +8,6 @@ export enum TraceLevel {
 }
 
 export interface IConfig {
-    debug: boolean;
     token: string;
     traceLevel: TraceLevel;
 }

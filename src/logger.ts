@@ -10,7 +10,6 @@ const isDebuggingRegex = /^--inspect(-brk)?=?/;
 
 export class Logger {
 
-    static debug = false;
     static level: TraceLevel = TraceLevel.Silent;
     static output: OutputChannel | undefined;
 
@@ -22,12 +21,7 @@ export class Logger {
     private static onConfigurationChanged(e: ConfigurationChangeEvent) {
         const initializing = configuration.initializing(e);
 
-        let section = configuration.name('debug').value;
-        if (initializing || configuration.changed(e, section)) {
-            this.debug = configuration.get<boolean>(section);
-        }
-
-        section = configuration.name('traceLevel').value;
+        const section = configuration.name('traceLevel').value;
         if (initializing || configuration.changed(e, section)) {
             this.level = configuration.get<TraceLevel>(section);
 
@@ -44,34 +38,34 @@ export class Logger {
     }
 
     static log(message?: any, ...params: any[]): void {
-        if (this.debug) {
+        if (Logger.isDebugging) {
             console.log(this.timestamp, ConsolePrefix, message, ...params);
         }
 
         if (this.output !== undefined && (this.level === TraceLevel.Verbose || this.level === TraceLevel.Debug)) {
-            this.output.appendLine((this.debug ? [this.timestamp, message, ...params] : [message, ...params]).join(' '));
+            this.output.appendLine((Logger.isDebugging ? [this.timestamp, message, ...params] : [message, ...params]).join(' '));
         }
     }
 
     static error(ex: Error, classOrMethod?: string, ...params: any[]): void {
-        if (this.debug) {
+        if (Logger.isDebugging) {
             console.error(this.timestamp, ConsolePrefix, classOrMethod, ...params, ex);
         }
 
         if (this.output !== undefined && this.level !== TraceLevel.Silent) {
-            this.output.appendLine((this.debug ? [this.timestamp, classOrMethod, ...params, ex] : [classOrMethod, ...params, ex]).join(' '));
+            this.output.appendLine((Logger.isDebugging ? [this.timestamp, classOrMethod, ...params, ex] : [classOrMethod, ...params, ex]).join(' '));
         }
 
         // Telemetry.trackException(ex);
     }
 
     static warn(message?: any, ...params: any[]): void {
-        if (this.debug) {
+        if (Logger.isDebugging) {
             console.warn(this.timestamp, ConsolePrefix, message, ...params);
         }
 
         if (this.output !== undefined && this.level !== TraceLevel.Silent) {
-            this.output.appendLine((this.debug ? [this.timestamp, message, ...params] : [message, ...params]).join(' '));
+            this.output.appendLine((Logger.isDebugging ? [this.timestamp, message, ...params] : [message, ...params]).join(' '));
         }
     }
 
