@@ -1,6 +1,7 @@
 import { commands, ConfigurationTarget, Disposable, Uri, window, workspace } from 'vscode';
-import { Command, createCommandDecorator } from './system';
 import { configuration, IConfig } from './configuration';
+import { GitHubFileSystemProvider } from './githubFileSystemProvider';
+import { Command, createCommandDecorator } from './system';
 
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
@@ -42,7 +43,7 @@ export class Commands extends Disposable {
         const uri = Uri.parse(result.toLocaleLowerCase());
         const [, owner, repo] = uri.path.split('/');
 
-        this.openWorkspace(Uri.parse(`remotehub://${owner}/${repo}`), `github.com/${owner}/${repo}`);
+        this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://${owner}/${repo}`), `github.com/${owner}/${repo}`);
     }
 
     async updateToken() {

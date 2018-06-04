@@ -1,29 +1,20 @@
 'use strict';
 import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemError, FileSystemProvider, FileType, Uri, workspace } from 'vscode';
-import { configuration, IConfig } from './configuration';
 import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
 import * as https from 'https';
 
 export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
 
-    private readonly _client: GraphQLClient;
+    public static readonly Scheme = 'remotehub';
+
     private readonly _disposable: Disposable;
 
-    constructor() {
+    constructor(private readonly _client: GraphQLClient) {
         super(() => this.dispose());
 
-        const cfg = configuration.get<IConfig>();
-        const token = cfg.token;
-
-        this._client = new GraphQLClient('https://api.github.com/graphql', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-
         this._disposable = Disposable.from(
-            workspace.registerFileSystemProvider('remotehub', this, { isCaseSensitive: true })
+            workspace.registerFileSystemProvider(GitHubFileSystemProvider.Scheme, this, { isCaseSensitive: true })
         );
     }
 

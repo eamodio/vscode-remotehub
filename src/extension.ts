@@ -8,6 +8,7 @@ import { ExtensionContext } from 'vscode';
 import { Commands } from './commands';
 import { configuration, IConfig } from './configuration';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
+import { GraphQLClient } from 'graphql-request';
 
 export async function activate(context: ExtensionContext) {
     const commands = new Commands();
@@ -17,9 +18,15 @@ export async function activate(context: ExtensionContext) {
         await commands.updateToken();
     }
 
+    const client = new GraphQLClient('https://api.github.com/graphql', {
+        headers: {
+            Authorization: `Bearer ${cfg.token}`
+        }
+    });
+
     context.subscriptions.push(
         commands,
-        new GitHubFileSystemProvider()
+        new GitHubFileSystemProvider(client),
     );
 }
 
