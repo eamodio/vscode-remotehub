@@ -31,7 +31,8 @@
     "main": "./out/extension",
     "activationEvents": [
         "onFileSystem:remotehub",
-        "onCommand:remotehub.openRepository"
+        "onCommand:remotehub.openRepository",
+        "onCommand:remotehub.openRepositoryForOwner"
     ],
     "contributes": {
         "configuration": {
@@ -60,7 +61,12 @@
         "commands": [
             {
                 "command": "remotehub.openRepository",
-                "title": "Open GitHub Repository",
+                "title": "Open GitHub Repository...",
+                "category": "RemoteHub"
+            },
+            {
+                "command": "remotehub.openRepositoryForOwner",
+                "title": "Open GitHub Repository for Owner...",
                 "category": "RemoteHub"
             }
         ]
@@ -78,14 +84,14 @@
         "vscode:prepublish": "npm run reset && npm run build"
     },
     "dependencies": {
-        "graphql-request": "^1.6.0",
+        "graphql-request": "1.6.0",
         "tslib": "1.9.2"
     },
     "devDependencies": {
-        "@types/node": "^10.3.0",
-        "@types/node-fetch": "^2.1.1",
-        "tslint": "^5.10.0",
-        "typescript": "^2.9.1",
-        "vscode": "^1.1.18"
+        "@types/node": "7.0.65",
+        "@types/node-fetch": "2.1.1",
+        "tslint": "5.10.0",
+        "typescript": "2.9.1",
+        "vscode": "1.1.18"
     }
 }

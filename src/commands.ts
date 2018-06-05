@@ -1,18 +1,21 @@
-import { commands, ConfigurationTarget, Disposable, Uri, window, workspace } from 'vscode';
+import { CancellationTokenSource, commands, ConfigurationTarget, Disposable, QuickPickItem, Uri, window, workspace } from 'vscode';
+import { GitHubApi } from './api';
 import { configuration, IConfig } from './configuration';
+import { extensionId } from './extension';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { Command, createCommandDecorator } from './system';
 
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
 
-const urlRegex = /^https:\/\/github.com\/.+?\/.+/;
+const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+)/i;
+const ownerRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 
 export class Commands extends Disposable {
 
     private readonly _disposable: Disposable;
 
-    constructor() {
+    constructor(private readonly _api: GitHubApi) {
         super(() => this.dispose);
 
         this._disposable = Disposable.from(
@@ -32,18 +35,62 @@ export class Commands extends Disposable {
         }
 
         const result = await window.showInputBox({
-            placeHolder: 'e.g. https://github.com/eamodio/vscode-gitlens',
-            prompt: 'Enter a GitHub repository url',
-            validateInput: (value: string) => urlRegex.test(value) ? undefined : 'Must be a valid GitHub url',
+            placeHolder: 'e.g. eamodio/vscode-gitlens or https://github.com/eamodio/vscode-gitlens',
+            prompt: 'Enter a GitHub repository to open',
+            validateInput: (value: string) => repositoryRegex.test(value) ? undefined : 'Must be a valid GitHub repository',
             ignoreFocusOut: true
         });
 
         if (!result) return;
 
-        const uri = Uri.parse(result.toLocaleLowerCase());
-        const [, owner, repo] = uri.path.split('/');
+        const match = repositoryRegex.exec(result);
+        if (match == null) return;
 
+        const [, owner, repo] = match;
         this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://${owner}/${repo}`), `github.com/${owner}/${repo}`);
+    }
+
+    @command('openRepositoryForOwner')
+    async openRepositoryForOwner() {
+        const cfg = configuration.get<IConfig>();
+        if (!cfg.token) {
+            if (!(await this.updateToken())) return;
+        }
+
+        let invalidValue: string | undefined;
+        while (true) {
+            const owner = await window.showInputBox({
+                placeHolder: 'e.g. eamodio or Microsoft',
+                prompt: 'Enter a GitHub username or organization',
+                value: invalidValue,
+                validateInput: (value: string) => (invalidValue !== value) && ownerRegex.test(value) ? undefined : 'Must be a valid GitHub username',
+                ignoreFocusOut: true
+            });
+
+            if (!owner) return;
+
+            const cancellationTokenSource = new CancellationTokenSource();
+
+            const pick = await window.showQuickPick(
+                this.getRepositories(owner, cancellationTokenSource),
+                {
+                    placeHolder: `Choose which ${owner} repository to open`
+                },
+                cancellationTokenSource.token
+            );
+
+            if (pick === undefined) {
+                if (cancellationTokenSource.token.isCancellationRequested) {
+                    invalidValue = owner;
+                    continue;
+                }
+
+                return;
+            }
+
+            this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://${owner}/${pick.label}`), `github.com/${owner}/${pick.label}`);
+            break;
+        }
     }
 
     async updateToken() {
@@ -56,6 +103,7 @@ export class Commands extends Disposable {
 
         if (token) {
             await configuration.update(configuration.name('token').value, token, ConfigurationTarget.Global);
+            this._api.refreshToken();
             return true;
         }
         return false;
@@ -66,5 +114,15 @@ export class Commands extends Disposable {
             return workspace.updateWorkspaceFolders(0, 0, { uri, name });
         }
         return workspace.updateWorkspaceFolders(0, workspace.workspaceFolders.length, { uri, name });
+    }
+
+    private async getRepositories(owner: string, cancellation: CancellationTokenSource) {
+        const repos = await this._api.repositoriesQuery(owner);
+        if (repos.length === 0) {
+            cancellation.cancel();
+            return [];
+        }
+
+        return repos.map(r => ({ label: r.name, description: r.url, detail: r.description } as QuickPickItem));
     }
 }

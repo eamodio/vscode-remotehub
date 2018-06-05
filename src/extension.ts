@@ -5,28 +5,23 @@ export const extensionOutputChannelName = 'RemoteHub';
 export const qualifiedExtensionId = `eamodio.${extensionId}`;
 
 import { ExtensionContext } from 'vscode';
+import { GitHubApi } from './api';
 import { Commands } from './commands';
 import { configuration, IConfig } from './configuration';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
-import { GraphQLClient } from 'graphql-request';
 
 export async function activate(context: ExtensionContext) {
-    const commands = new Commands();
+    const api = new GitHubApi();
+    const commands = new Commands(api);
 
     const cfg = configuration.get<IConfig>();
     if (!cfg.token) {
         await commands.updateToken();
     }
 
-    const client = new GraphQLClient('https://api.github.com/graphql', {
-        headers: {
-            Authorization: `Bearer ${cfg.token}`
-        }
-    });
-
     context.subscriptions.push(
         commands,
-        new GitHubFileSystemProvider(client),
+        new GitHubFileSystemProvider(api)
     );
 }
 

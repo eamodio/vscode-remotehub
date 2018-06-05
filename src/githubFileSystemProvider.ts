@@ -1,7 +1,6 @@
 'use strict';
 import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemError, FileSystemProvider, FileType, Uri, workspace } from 'vscode';
-import { GraphQLClient } from 'graphql-request';
-import { Logger } from './logger';
+import { GitHubApi } from './api';
 import * as https from 'https';
 
 export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
@@ -10,7 +9,7 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
 
     private readonly _disposable: Disposable;
 
-    constructor(private readonly _client: GraphQLClient) {
+    constructor(private readonly _api: GitHubApi) {
         super(() => this.dispose());
 
         this._disposable = Disposable.from(
@@ -34,12 +33,12 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     async stat(uri: Uri): Promise<FileStat> {
         if (uri.path === '' || uri.path.lastIndexOf('/') === 0) return { type: FileType.Directory, size: 0, ctime: 0, mtime: 0 };
 
-        const data = await this.query<{ __typename: string, byteSize: number | undefined }>(
+        const data = await this._api.fsQuery<{ __typename: string, byteSize: number | undefined }>(
+            uri,
             `__typename
             ...on Blob {
                 byteSize
-            }`,
-            GitHubFileSystemProvider.uriToQueryVariables(uri)
+            }`
         );
 
         return {
@@ -51,14 +50,14 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readDirectory(uri: Uri): Promise<[string, FileType][]> {
-        const data = await this.query<{ entries: { name: string, type: string }[] }>(
+        const data = await this._api.fsQuery<{ entries: { name: string, type: string }[] }>(
+            uri,
             `... on Tree {
                 entries {
                 name
                 type
                 }
-            }`,
-            GitHubFileSystemProvider.uriToQueryVariables(uri)
+            }`
         );
 
         return ((data && data.entries) || [])
@@ -70,12 +69,12 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readFile(uri: Uri): Promise<Uint8Array> {
-        const data = await this.query<{ isBinary: boolean, text: string }>(
+        const data = await this._api.fsQuery<{ isBinary: boolean, text: string }>(
+            uri,
             `... on Blob {
                 isBinary,
                 text
-            }`,
-            GitHubFileSystemProvider.uriToQueryVariables(uri)
+            }`
         );
 
         let buffer;
@@ -112,25 +111,6 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         throw FileSystemError.NoPermissions;
     }
 
-    private async query<T>(innerQuery: string, variables: QueryVariables): Promise<T | undefined> {
-        try {
-            const query = `query fs($owner: String!, $repo: String!, $path: String) {
-                repository(owner:$owner, name:$repo) {
-                    object(expression:$path) {
-                        ${innerQuery}
-                    }
-                }
-            }`;
-
-            const rsp = await this._client.request<{ repository: { object: T } }>(query, variables);
-            return rsp.repository.object;
-        }
-        catch (ex) {
-            Logger.error(ex);
-            return undefined;
-        }
-    }
-
     private static bufferToUint8Array(buffer: Buffer): Uint8Array {
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
     }
@@ -164,21 +144,4 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
             default: return FileType.Unknown;
         }
     }
-
-    private static uriToQueryVariables(uri: Uri): QueryVariables {
-        const [, repo, ...rest] = uri.path.split('/');
-        const path = `HEAD:${rest.join('/')}`;
-
-        return {
-            owner: uri.authority,
-            repo: repo,
-            path: path
-        };
-    }
-}
-
-interface QueryVariables {
-    owner: string;
-    repo: string;
-    path: string;
 }
