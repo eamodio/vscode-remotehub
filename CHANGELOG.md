@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.1.1] - 2018-06-06
+### Fixed
+- Fixes incorrect setting name in README
+
 ## [0.1.0] - 2018-06-06
 ### Added
 - Adds experimental language services (Go to definition, hovers, references, etc) provided by [Sourcegraph](https://sourcegraph.com)
