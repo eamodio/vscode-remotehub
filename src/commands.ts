@@ -1,7 +1,6 @@
 import { CancellationTokenSource, commands, ConfigurationTarget, Disposable, QuickPickItem, Uri, window, workspace } from 'vscode';
-import { GitHubApi } from './api';
 import { configuration, IConfig } from './configuration';
-import { extensionId } from './extension';
+import { GitHubApi } from './gitHubApi';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { Command, createCommandDecorator } from './system';
 
@@ -15,7 +14,9 @@ export class Commands extends Disposable {
 
     private readonly _disposable: Disposable;
 
-    constructor(private readonly _api: GitHubApi) {
+    constructor(
+        private readonly _github: GitHubApi
+    ) {
         super(() => this.dispose);
 
         this._disposable = Disposable.from(
@@ -29,10 +30,7 @@ export class Commands extends Disposable {
 
     @command('openRepository')
     async openRepository() {
-        const cfg = configuration.get<IConfig>();
-        if (!cfg.token) {
-            if (!(await this.updateToken())) return;
-        }
+        if (!(await this.ensureTokens())) return;
 
         const result = await window.showInputBox({
             placeHolder: 'e.g. eamodio/vscode-gitlens or https://github.com/eamodio/vscode-gitlens',
@@ -50,12 +48,9 @@ export class Commands extends Disposable {
         this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://${owner}/${repo}`), `github.com/${owner}/${repo}`);
     }
 
-    @command('openRepositoryForOwner')
-    async openRepositoryForOwner() {
-        const cfg = configuration.get<IConfig>();
-        if (!cfg.token) {
-            if (!(await this.updateToken())) return;
-        }
+    @command('openRepositoryByOwner')
+    async openRepositoryByOwner() {
+        if (!(await this.ensureTokens())) return;
 
         let invalidValue: string | undefined;
         while (true) {
@@ -69,18 +64,18 @@ export class Commands extends Disposable {
 
             if (!owner) return;
 
-            const cancellationTokenSource = new CancellationTokenSource();
+            const cancellation = new CancellationTokenSource();
 
             const pick = await window.showQuickPick(
-                this.getRepositories(owner, cancellationTokenSource),
+                this.getRepositories(owner, cancellation),
                 {
                     placeHolder: `Choose which ${owner} repository to open`
                 },
-                cancellationTokenSource.token
+                cancellation.token
             );
 
             if (pick === undefined) {
-                if (cancellationTokenSource.token.isCancellationRequested) {
+                if (cancellation.token.isCancellationRequested) {
                     invalidValue = owner;
                     continue;
                 }
@@ -93,20 +88,21 @@ export class Commands extends Disposable {
         }
     }
 
-    async updateToken() {
-        const token = await window.showInputBox({
-            placeHolder: 'Generate a personal access token from github.com',
-            prompt: 'Enter a GitHub personal access token',
-            validateInput: (value: string) => value ? undefined : 'Must be a valid GitHub personal access token',
-            ignoreFocusOut: true
-        });
+    async ensureTokens() {
+        const cfg = configuration.get<IConfig>();
+        if (!cfg.githubToken) {
+            const token = await window.showInputBox({
+                placeHolder: 'Generate a personal access token from github.com',
+                prompt: 'Enter a GitHub personal access token',
+                validateInput: (value: string) => value ? undefined : 'Must be a valid GitHub personal access token',
+                ignoreFocusOut: true
+            });
+            if (!token) return false;
 
-        if (token) {
-            await configuration.update(configuration.name('token').value, token, ConfigurationTarget.Global);
-            this._api.refreshToken();
-            return true;
+            await configuration.update(configuration.name('githubToken').value, token, ConfigurationTarget.Global);
         }
-        return false;
+
+        return true;
     }
 
     openWorkspace(uri: Uri, name?: string) {
@@ -117,7 +113,7 @@ export class Commands extends Disposable {
     }
 
     private async getRepositories(owner: string, cancellation: CancellationTokenSource) {
-        const repos = await this._api.repositoriesQuery(owner);
+        const repos = await this._github.repositoriesQuery(owner);
         if (repos.length === 0) {
             cancellation.cancel();
             return [];

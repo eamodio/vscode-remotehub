@@ -1,7 +1,7 @@
 'use strict';
 import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemError, FileSystemProvider, FileType, Uri, workspace } from 'vscode';
-import { GitHubApi } from './api';
-import * as https from 'https';
+import { GitHubApi } from './gitHubApi';
+import fetch from 'node-fetch';
 
 export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
 
@@ -9,7 +9,9 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
 
     private readonly _disposable: Disposable;
 
-    constructor(private readonly _api: GitHubApi) {
+    constructor(
+        private readonly _github: GitHubApi
+    ) {
         super(() => this.dispose());
 
         this._disposable = Disposable.from(
@@ -33,7 +35,7 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     async stat(uri: Uri): Promise<FileStat> {
         if (uri.path === '' || uri.path.lastIndexOf('/') === 0) return { type: FileType.Directory, size: 0, ctime: 0, mtime: 0 };
 
-        const data = await this._api.fsQuery<{ __typename: string, byteSize: number | undefined }>(
+        const data = await this._github.fsQuery<{ __typename: string, byteSize: number | undefined }>(
             uri,
             `__typename
             ...on Blob {
@@ -50,12 +52,12 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readDirectory(uri: Uri): Promise<[string, FileType][]> {
-        const data = await this._api.fsQuery<{ entries: { name: string, type: string }[] }>(
+        const data = await this._github.fsQuery<{ entries: { name: string, type: string }[] }>(
             uri,
             `... on Tree {
                 entries {
-                name
-                type
+                    name
+                    type
                 }
             }`
         );
@@ -69,22 +71,24 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readFile(uri: Uri): Promise<Uint8Array> {
-        const data = await this._api.fsQuery<{ isBinary: boolean, text: string }>(
+        const data = await this._github.fsQuery<{ oid: string, isBinary: boolean, text: string }>(
             uri,
             `... on Blob {
+                oid,
                 isBinary,
                 text
             }`
         );
 
+        if (data) {
+            this._github.trackRepoForUri(uri, data.oid);
+        }
+
         let buffer;
         if (data && data.isBinary) {
-            const owner = uri.authority;
-            const [, repo, ...rest] = uri.path.split('/');
-            const path = `/HEAD/${rest.join('/')}`;
-
+            const [owner, repo, path] = GitHubFileSystemProvider.extractRepoInfo(uri);
             // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
-            const downloadUri = uri.with({ scheme: 'https', authority: 'raw.githubusercontent.com', path: `/${owner}/${repo}${path}` });
+            const downloadUri = uri.with({ scheme: 'https', authority: 'raw.githubusercontent.com', path: `/${owner}/${repo}/HEAD/${path}` });
 
             buffer = await GitHubFileSystemProvider.downloadBinary(downloadUri);
         }
@@ -93,7 +97,7 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         }
 
         return GitHubFileSystemProvider.bufferToUint8Array(buffer);
-}
+    }
 
     writeFile(): void | Thenable<void> {
         throw FileSystemError.NoPermissions;
@@ -111,26 +115,23 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         throw FileSystemError.NoPermissions;
     }
 
+    static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
+        const [, repo, ...rest] = uri.path.split('/');
+
+        return [
+            uri.authority,
+            repo,
+            rest.join('/')
+        ];
+    }
+
     private static bufferToUint8Array(buffer: Buffer): Uint8Array {
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
     }
 
     private static async downloadBinary(uri: Uri) {
-        return new Promise<Buffer>(resolve => {
-            const chunks: Buffer[] = [];
-
-            https.get(uri.toString(), rsp => {
-                rsp.setEncoding('binary');
-
-                rsp.on('data', chunk => {
-                    return chunks.push(typeof chunk === 'string' ? Buffer.from(chunk, 'binary') : chunk);
-                });
-
-                rsp.on('end', () => {
-                    resolve(Buffer.concat(chunks));
-                });
-            });
-        });
+        const resp = await fetch(uri.toString());
+        return resp.buffer();
     }
 
     private static typeToFileType(type: string | undefined | null) {

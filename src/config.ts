@@ -8,6 +8,6 @@ export enum TraceLevel {
 }
 
 export interface IConfig {
-    token: string;
+    githubToken: string;
     traceLevel: TraceLevel;
 }

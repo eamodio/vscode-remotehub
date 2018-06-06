@@ -1,6 +1,6 @@
 {
     "name": "remotehub",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": {
         "name": "Eric Amodio",
         "email": "eamodio@gmail.com"
@@ -11,7 +11,7 @@
     },
     "license": "SEE LICENSE IN LICENSE",
     "displayName": "RemoteHub",
-    "description": "",
+    "description": "RemoteHub is a proof-of-concept extension that allows for opening a remote GitHub repository as a workspace",
     "categories": [
         "Other"
     ],
@@ -32,16 +32,16 @@
     "activationEvents": [
         "onFileSystem:remotehub",
         "onCommand:remotehub.openRepository",
-        "onCommand:remotehub.openRepositoryForOwner"
+        "onCommand:remotehub.openRepositoryByOwner"
     ],
     "contributes": {
         "configuration": {
             "type": "object",
             "title": "RemoteHub configuration",
             "properties": {
-                "remotehub.token": {
+                "remotehub.githubToken": {
                     "type": "string",
-                    "description": "Specifies GitHub personal access token to use for authentication with the GitHub GraphQL API",
+                    "description": "Specifies the GitHub personal access token to use for authentication with the GitHub GraphQL API",
                     "scope": "window"
                 },
                 "remotehub.traceLevel": {
@@ -65,8 +65,8 @@
                 "category": "RemoteHub"
             },
             {
-                "command": "remotehub.openRepositoryForOwner",
-                "title": "Open GitHub Repository for Owner...",
+                "command": "remotehub.openRepositoryByOwner",
+                "title": "Open GitHub Repository By Owner...",
                 "category": "RemoteHub"
             }
         ]

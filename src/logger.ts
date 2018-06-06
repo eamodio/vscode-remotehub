@@ -80,17 +80,6 @@ export class Logger {
         return `[${now.toISOString().replace(/T/, ' ').replace(/\..+/, '')}:${('00' + now.getUTCMilliseconds()).slice(-3)}]`;
     }
 
-    static gitOutput: OutputChannel | undefined;
-
-    static logGitCommand(command: string, cwd: string, ex?: Error): void {
-        if (this.level !== TraceLevel.Debug) return;
-
-        if (this.gitOutput === undefined) {
-            this.gitOutput = window.createOutputChannel(`${extensionOutputChannelName} (Git)`);
-        }
-        this.gitOutput.appendLine(`${this.timestamp} ${command} (${cwd})${ex === undefined ? '' : `\n\n${ex.toString()}`}`);
-    }
-
     private static _isDebugging: boolean | undefined;
     static get isDebugging() {
         if (this._isDebugging === undefined) {

@@ -5,23 +5,32 @@ export const extensionOutputChannelName = 'RemoteHub';
 export const qualifiedExtensionId = `eamodio.${extensionId}`;
 
 import { ExtensionContext } from 'vscode';
-import { GitHubApi } from './api';
 import { Commands } from './commands';
 import { configuration, IConfig } from './configuration';
+import { GitHubApi } from './gitHubApi';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
+import { Logger } from './logger';
+import { RemoteLanguageProvider } from './remoteLanguageProvider';
+import { SourcegraphApi } from './sourcegraphApi';
 
 export async function activate(context: ExtensionContext) {
-    const api = new GitHubApi();
-    const commands = new Commands(api);
+    Logger.configure(context);
+
+    const github = new GitHubApi();
+    const commands = new Commands(github);
 
     const cfg = configuration.get<IConfig>();
-    if (!cfg.token) {
-        await commands.updateToken();
+    if (!cfg.githubToken) {
+        await commands.ensureTokens();
     }
 
+    const sourcegraph = new SourcegraphApi(github);
     context.subscriptions.push(
+        github,
+        sourcegraph,
         commands,
-        new GitHubFileSystemProvider(api)
+        new RemoteLanguageProvider(sourcegraph),
+        new GitHubFileSystemProvider(github)
     );
 }
 

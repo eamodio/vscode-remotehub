@@ -1,0 +1,36 @@
+@token = 0693be05f4739d0154c90d56e17bc635f68427d5
+
+POST https://sourcegraph.com/.api/xlang/textDocument/hover
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+[
+    {
+        "id": 0,
+        "method": "initialize",
+        "params": {
+            "rootUri": "git://github.com/eamodio/vscode-gitlens?031c63e54a8db66ad536b44a86e6c0d8f666bdd1",
+            "mode": "typescript"
+        }
+    },
+    {
+        "id": 1,
+        "method": "textDocument/hover",
+        "params": {
+            "textDocument": {
+                "uri": "git://github.com/eamodio/vscode-gitlens?031c63e54a8db66ad536b44a86e6c0d8f666bdd1#src/container.ts"
+            },
+            "position": {
+                "character": 66,
+                "line": 28
+            }
+        }
+    },
+    {
+        "id": 2,
+        "method": "shutdown"
+    },
+    {
+        "method": "exit"
+    }
+]
