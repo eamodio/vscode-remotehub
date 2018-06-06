@@ -2,12 +2,13 @@
 
 RemoteHub is a **proof-of-concept** extension that allows for opening a remote GitHub repository as a workspace. Experimental language services (Go to definition, hovers, references, etc) are provided by [Sourcegraph](https://sourcegraph.com) and will only work on public repositories that are enabled and supported by them.
 
-NOTE: As this extension is in the **very** early stages and is likely to have lots of bugs and only work in certain cases, please avoid negative reviews and file GitHub issues instead.
+NOTE: This extension is in the **very** early stages and is likely to have lots of bugs and only work in certain cases, so please keep that in mind. Also *please* file GitHub issues for any questions, features, or issues. Thanks!
 
 ## Features
 
 - Adds a `Open GitHub Repository...` command (`remotehub.openRepository`) to open, in a new workspace, a remote GitHub repository by its url
 - Adds a `Open GitHub Repository By Owner...` command (`remotehub.openRepositoryByOwner`) to open, in a new workspace, a remote GitHub repository by picking from a list (20 max) of the most popular repositories for the specified user or organization
+- Adds support for a `remotehub://` uri scheme, e.g. `remotehub://github.com/eamodio/vscode-remotehub` which can be saved into a workspace
 
 ## Requirements
 
