@@ -45,7 +45,7 @@ export class Commands extends Disposable {
         if (match == null) return;
 
         const [, owner, repo] = match;
-        this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://${owner}/${repo}`), `github.com/${owner}/${repo}`);
+        this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://github.com/${owner}/${repo}`), `github.com/${owner}/${repo}`);
     }
 
     @command('openRepositoryByOwner')
@@ -83,7 +83,7 @@ export class Commands extends Disposable {
                 return;
             }
 
-            this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://${owner}/${pick.label}`), `github.com/${owner}/${pick.label}`);
+            this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://github.com/${owner}/${pick.label}`), `github.com/${owner}/${pick.label}`);
             break;
         }
     }

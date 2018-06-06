@@ -216,11 +216,10 @@ export class SourcegraphApi extends Disposable {
     private static toRemoteHubUri(uri: Uri): Uri {
         const [, owner, repo] = uri.path.split('/');
 
-        // e.g. remotehub://eamodio/vscode-gitlens/src/extension.ts
+        // e.g. remotehub://github.com/eamodio/vscode-gitlens/src/extension.ts
         return uri.with({
             scheme: GitHubFileSystemProvider.Scheme,
-            authority: owner,
-            path: `/${repo}/${uri.fragment}`
+            path: `/${owner}/${repo}/${uri.fragment}`
         });
     }
 
@@ -230,7 +229,6 @@ export class SourcegraphApi extends Disposable {
         // e.g. git://github.com/eamodio/vscode-gitlens?<sha>#src/extension.ts
         return uri.with({
             scheme: 'git',
-            authority: 'github.com',
             path: `/${owner}/${repo}`,
             query: sha,
             fragment: path

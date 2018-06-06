@@ -116,10 +116,10 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
-        const [, repo, ...rest] = uri.path.split('/');
+        const [, owner, repo, ...rest] = uri.path.split('/');
 
         return [
-            uri.authority,
+            owner,
             repo,
             rest.join('/')
         ];
