@@ -20,7 +20,7 @@ RemoteHub requires a personal access token to authenticate to GitHub’s GraphQL
 
 Copy the generated access token to your clipboard and paste it into the input box or into your `settings.json` as follows:
 ```json
-    "remotehub.token": "<your-token-here>"
+    "remotehub.githubToken": "<your-token-here>"
 ```
 
 ## RemoteHub Settings
