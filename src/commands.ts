@@ -10,15 +10,13 @@ const command = createCommandDecorator(commandRegistry);
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+)/i;
 const ownerRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 
-export class Commands extends Disposable {
+export class Commands {
 
     private readonly _disposable: Disposable;
 
     constructor(
         private readonly _github: GitHubApi
     ) {
-        super(() => this.dispose);
-
         this._disposable = Disposable.from(
             ...commandRegistry.map(({ name, key, method }) => commands.registerCommand(name, (...args: any[]) => method.apply(this, args)))
         );

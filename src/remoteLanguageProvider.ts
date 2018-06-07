@@ -12,15 +12,13 @@ import {
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { SourcegraphApi } from './sourcegraphApi';
 
-export class RemoteLanguageProvider extends Disposable implements DefinitionProvider, DocumentSymbolProvider, HoverProvider, ReferenceProvider, WorkspaceSymbolProvider {
+export class RemoteLanguageProvider implements DefinitionProvider, DocumentSymbolProvider, HoverProvider, ReferenceProvider, WorkspaceSymbolProvider {
 
     private readonly _disposable: Disposable;
 
     constructor(
         private _sourcegraph: SourcegraphApi
     ) {
-        super(() => this.dispose());
-
         this._disposable = Disposable.from(
             languages.registerDefinitionProvider({ scheme: GitHubFileSystemProvider.Scheme, language: '*' }, this),
             languages.registerDocumentSymbolProvider({ scheme: GitHubFileSystemProvider.Scheme, language: '*' }, this),

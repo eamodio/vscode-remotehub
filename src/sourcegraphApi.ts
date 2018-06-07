@@ -1,7 +1,7 @@
 'use strict';
 import {
     CancellationToken,
-    Definition, Disposable,
+    Definition,
     Hover,
     Location,
     MarkdownString,
@@ -19,14 +19,13 @@ import fetch from 'node-fetch';
 
 const hoverTypeRegex = /\*\*(.*)?\*\*(?: \_\((.*)\)\_)?/;
 
-export class SourcegraphApi extends Disposable {
+export class SourcegraphApi {
 
     private readonly _capabilitiesMap = new Map<WorkspaceFolder, LspCapabilities>();
 
     constructor(
         public readonly _github: GitHubApi
     ) {
-        super(() => this.dispose());
     }
 
     dispose() {

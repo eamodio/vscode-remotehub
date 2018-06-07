@@ -3,7 +3,7 @@ import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemE
 import { GitHubApi } from './gitHubApi';
 import fetch from 'node-fetch';
 
-export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
+export class GitHubFileSystemProvider implements FileSystemProvider {
 
     public static readonly Scheme = 'remotehub';
 
@@ -12,8 +12,6 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     constructor(
         private readonly _github: GitHubApi
     ) {
-        super(() => this.dispose());
-
         this._disposable = Disposable.from(
             workspace.registerFileSystemProvider(GitHubFileSystemProvider.Scheme, this, { isCaseSensitive: true })
         );

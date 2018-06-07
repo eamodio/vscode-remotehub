@@ -6,15 +6,13 @@ import { Logger } from './logger';
 import { Variables } from 'graphql-request/dist/src/types';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 
-export class GitHubApi extends Disposable {
+export class GitHubApi {
 
     private readonly _disposable: Disposable;
     private readonly _latestCommitMap = new Map<WorkspaceFolder, string>();
     private readonly _latestCommitForUriMap = new Map<string, string>();
 
     constructor() {
-        super(() => this.dispose());
-
         this._disposable = Disposable.from(
             configuration.onDidChange(this.onConfigurationChanged, this)
         );
