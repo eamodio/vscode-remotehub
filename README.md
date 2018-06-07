@@ -6,8 +6,8 @@ NOTE: This extension is in the **very** early stages and is likely to have lots 
 
 ## Features
 
-- Adds a `Open GitHub Repository...` command (`remotehub.openRepository`) to open, in a new workspace, a remote GitHub repository by its url
-- Adds a `Open GitHub Repository By Owner...` command (`remotehub.openRepositoryByOwner`) to open, in a new workspace, a remote GitHub repository by picking from a list (20 max) of the most popular repositories for the specified user or organization
+- Adds a `Open GitHub Repository...` command (`remotehub.openRepository`) which allows you to search for a remote GitHub repository to open, replacing the current workspace &mdash; eventually this will open in a new window, once I figure out a good way to do it
+- Adds a `Add GitHub Repository to Workspace...` command (`remotehub.addRepository`) which allows you to search for a remote GitHub repository to open in the current workspace
 - Adds support for a `remotehub://` uri scheme, e.g. `remotehub://github.com/eamodio/vscode-remotehub` which can be saved into a workspace
 
 ## Requirements

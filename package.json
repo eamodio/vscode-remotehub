@@ -31,8 +31,8 @@
     "main": "./out/extension",
     "activationEvents": [
         "onFileSystem:remotehub",
-        "onCommand:remotehub.openRepository",
-        "onCommand:remotehub.openRepositoryByOwner"
+        "onCommand:remotehub.addRepository",
+        "onCommand:remotehub.openRepository"
     ],
     "contributes": {
         "configuration": {
@@ -60,13 +60,13 @@
         },
         "commands": [
             {
-                "command": "remotehub.openRepository",
-                "title": "Open GitHub Repository...",
+                "command": "remotehub.addRepository",
+                "title": "Add GitHub Repository to Workspace...",
                 "category": "RemoteHub"
             },
             {
-                "command": "remotehub.openRepositoryByOwner",
-                "title": "Open GitHub Repository By Owner...",
+                "command": "remotehub.openRepository",
+                "title": "Open GitHub Repository...",
                 "category": "RemoteHub"
             }
         ]

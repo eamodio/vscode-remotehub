@@ -1,14 +1,12 @@
+'use strict';
 import { CancellationTokenSource, commands, ConfigurationTarget, Disposable, QuickPickItem, Uri, window, workspace } from 'vscode';
 import { configuration, IConfig } from './configuration';
-import { GitHubApi } from './gitHubApi';
+import { GitHubApi, Repository } from './gitHubApi';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { Command, createCommandDecorator } from './system';
 
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
-
-const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+)/i;
-const ownerRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 
 export class Commands extends Disposable {
 
@@ -28,62 +26,51 @@ export class Commands extends Disposable {
         this._disposable && this._disposable.dispose();
     }
 
-    @command('openRepository')
-    async openRepository() {
-        if (!(await this.ensureTokens())) return;
-
-        const result = await window.showInputBox({
-            placeHolder: 'e.g. eamodio/vscode-gitlens or https://github.com/eamodio/vscode-gitlens',
-            prompt: 'Enter a GitHub repository to open',
-            validateInput: (value: string) => repositoryRegex.test(value) ? undefined : 'Must be a valid GitHub repository',
-            ignoreFocusOut: true
-        });
-
-        if (!result) return;
-
-        const match = repositoryRegex.exec(result);
-        if (match == null) return;
-
-        const [, owner, repo] = match;
-        this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://github.com/${owner}/${repo}`), `github.com/${owner}/${repo}`);
+    @command('addRepository')
+    async addRepository() {
+        return this.openRepository({ replace: false });
     }
 
-    @command('openRepositoryByOwner')
-    async openRepositoryByOwner() {
+    @command('openRepository')
+    async openRepository(options: { replace: boolean } = { replace: true}) {
         if (!(await this.ensureTokens())) return;
 
-        let invalidValue: string | undefined;
+        let initialValue: string | undefined;
         while (true) {
-            const owner = await window.showInputBox({
-                placeHolder: 'e.g. eamodio or Microsoft',
-                prompt: 'Enter a GitHub username or organization',
-                value: invalidValue,
-                validateInput: (value: string) => (invalidValue !== value) && ownerRegex.test(value) ? undefined : 'Must be a valid GitHub username',
+            const query = await window.showInputBox({
+                placeHolder: 'e.g. vscode-gitlens, eamodio/, eamodio/vscode-gitlens, or https://github.com/eamodio/vscode-gitlens',
+                prompt: 'Enter a value or url to use to search for repositories',
+                value: initialValue,
                 ignoreFocusOut: true
             });
 
-            if (!owner) return;
+            if (!query) return;
 
             const cancellation = new CancellationTokenSource();
 
-            const pick = await window.showQuickPick(
-                this.getRepositories(owner, cancellation),
+            const pick = await window.showQuickPick<RepositoryQuickPickItem>(
+                this.searchForRepositories(query, cancellation),
                 {
-                    placeHolder: `Choose which ${owner} repository to open`
+                    placeHolder: `Select a repository to open`
                 },
                 cancellation.token
             );
 
             if (pick === undefined) {
                 if (cancellation.token.isCancellationRequested) {
-                    invalidValue = owner;
+                    initialValue = query;
                     continue;
                 }
 
                 return;
             }
 
-            this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://github.com/${owner}/${pick.label}`), `github.com/${owner}/${pick.label}`);
+            if (pick.repo === undefined) {
+                initialValue = query;
+                continue;
+            }
+
+            this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://github.com/${pick.repo.nameWithOwner}`), `github.com/${pick.repo.nameWithOwner}`, options.replace);
             break;
         }
     }
@@ -105,20 +92,33 @@ export class Commands extends Disposable {
         return true;
     }
 
-    openWorkspace(uri: Uri, name?: string) {
-        if (workspace.workspaceFolders === undefined || workspace.workspaceFolders.length === 0) {
-            return workspace.updateWorkspaceFolders(0, 0, { uri, name });
-        }
-        return workspace.updateWorkspaceFolders(0, workspace.workspaceFolders.length, { uri, name });
+    openWorkspace(uri: Uri, name: string, replace: boolean) {
+        const count = (workspace.workspaceFolders && workspace.workspaceFolders.length) || 0;
+        return workspace.updateWorkspaceFolders(
+            replace ? 0 : count,
+            replace ? count : 0,
+            { uri, name }
+        );
     }
 
-    private async getRepositories(owner: string, cancellation: CancellationTokenSource) {
-        const repos = await this._github.repositoriesQuery(owner);
+    private async searchForRepositories(query: string, cancellation: CancellationTokenSource) {
+        const repos = await this._github.repositoriesQuery(query);
         if (repos.length === 0) {
             cancellation.cancel();
             return [];
         }
 
-        return repos.map(r => ({ label: r.name, description: r.url, detail: r.description } as QuickPickItem));
+        const items = repos.map(r => ({ label: r.name, description: r.url, detail: r.description, repo: r } as RepositoryQuickPickItem));
+
+        items.splice(0, 0, {
+            label: `go back \u21a9`,
+            description: `\u00a0\u00a0\u2014\u00a0\u00a0\u00a0 to search again`
+        } as RepositoryQuickPickItem);
+
+        return items;
     }
+}
+
+interface RepositoryQuickPickItem extends QuickPickItem {
+    repo?: Repository;
 }

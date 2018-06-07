@@ -6,6 +6,8 @@ import { Logger } from './logger';
 import { Variables } from 'graphql-request/dist/src/types';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 
+const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
+
 export class GitHubApi extends Disposable {
 
     private readonly _disposable: Disposable;
@@ -79,8 +81,8 @@ export class GitHubApi extends Disposable {
     async fsQuery<T>(uri: Uri, innerQuery: string): Promise<T | undefined> {
         try {
             const query = `query fs($owner: String!, $repo: String!, $path: String) {
-                repository(owner:$owner, name:$repo) {
-                    object(expression:$path) {
+                repository(owner: $owner, name: $repo) {
+                    object(expression: $path) {
                         ${innerQuery}
                     }
                 }
@@ -101,7 +103,7 @@ export class GitHubApi extends Disposable {
     async repositoryShaQuery(owner: string, repo: string): Promise<string | undefined> {
         try {
             const query = `query repo($owner: String!, $repo: String!) {
-                repository(owner:$owner, name:$repo) {
+                repository(owner: $owner, name: $repo) {
                     defaultBranchRef {
                         target {
                             oid
@@ -124,29 +126,50 @@ export class GitHubApi extends Disposable {
         }
     }
 
-    async repositoriesQuery(owner: string): Promise<Repository[]> {
+    async repositoriesQuery(rawQuery: string): Promise<Repository[]> {
+        let searchQuery;
+
+        const match = repositoryRegex.exec(rawQuery);
+        if (match != null) {
+            const [, owner, repo] = match;
+            searchQuery = `${repo} in:name user:${owner} sort:stars-desc`;
+        }
+        else {
+            const [ownerOrRepo, repo] = rawQuery.split('/');
+            if (ownerOrRepo && repo) {
+                searchQuery = `${repo} in:name user:${ownerOrRepo} sort:stars-desc`;
+            }
+            else if (ownerOrRepo && repo !== undefined) {
+                searchQuery = `user:${ownerOrRepo} sort:stars-desc`;
+            }
+            else {
+                searchQuery = `${ownerOrRepo} in:name sort:stars-desc`;
+            }
+        }
+
         try {
-            const query = `query repos($owner: String!) {
-                repositoryOwner(login:$owner) {
-                    repositories(first: 20, orderBy: { field: STARGAZERS, direction: DESC }) {
-                        edges {
-                            node {
+            const query = `query repos($query: String!) {
+                search(type: REPOSITORY, query: $query, first: 25 ) {
+                    edges {
+                        node {
+                            ... on Repository {
                                 name,
                                 description,
-                                url
+                                url,
+                                nameWithOwner
                             }
                         }
                     }
                 }
             }`;
 
-            const variables = { owner: owner };
+            const variables = { query: searchQuery };
             Logger.log(query, JSON.stringify(variables));
 
-            const rsp = await this.client.request<{ repositoryOwner: { repositories: { edges: { node: Repository }[] } } }>(query, variables);
-            if (rsp.repositoryOwner == null) return [];
+            const rsp = await this.client.request<{ search: { edges: { node: Repository }[] } }>(query, variables);
+            if (rsp.search == null) return [];
 
-            return rsp.repositoryOwner.repositories.edges.map(e => e.node);
+            return rsp.search.edges.map(e => e.node);
         }
         catch (ex) {
             Logger.error(ex);
@@ -169,4 +192,5 @@ export interface Repository {
     name: string;
     description: string;
     url: string;
+    nameWithOwner: string;
 }

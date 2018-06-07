@@ -1,3 +1,4 @@
+'use strict';
 import {
     CancellationToken,
     Definition, DefinitionProvider, Disposable, DocumentSymbolProvider,
