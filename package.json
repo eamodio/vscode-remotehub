@@ -1,25 +1,14 @@
 {
     "name": "remotehub",
+    "displayName": "RemoteHub",
+    "description": "RemoteHub is a proof-of-concept extension that allows for opening a remote GitHub repository as a workspace",
     "version": "0.1.2",
     "author": {
         "name": "Eric Amodio",
         "email": "eamodio@gmail.com"
     },
     "publisher": "eamodio",
-    "engines": {
-        "vscode": "^1.23.0"
-    },
     "license": "SEE LICENSE IN LICENSE",
-    "displayName": "RemoteHub",
-    "description": "RemoteHub is a proof-of-concept extension that allows for opening a remote GitHub repository as a workspace",
-    "categories": [
-        "Other"
-    ],
-    "keywords": [
-        "github"
-    ],
-    "icon": "images/remotehub-icon.png",
-    "preview": true,
     "homepage": "https://github.com/eamodio/vscode-remotehub/blob/master/README.md",
     "bugs": {
         "url": "https://github.com/eamodio/vscode-remotehub/issues"
@@ -28,7 +17,21 @@
         "type": "git",
         "url": "https://github.com/eamodio/vscode-remotehub.git"
     },
+    "engines": {
+        "vscode": "^1.23.0"
+    },
     "main": "./out/extension",
+    "icon": "images/remotehub-icon.png",
+    "preview": true,
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "github",
+        "remote",
+        "repository",
+        "browse"
+    ],
     "activationEvents": [
         "onFileSystem:remotehub",
         "onCommand:remotehub.addRepository",
