@@ -85,7 +85,7 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
 
         let buffer;
         if (data && data.isBinary) {
-            const [owner, repo, path] = GitHubFileSystemProvider.extractRepoInfo(uri);
+            const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
             // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
             const downloadUri = uri.with({ scheme: 'https', authority: 'raw.githubusercontent.com', path: `/${owner}/${repo}/HEAD/${path}` });
 

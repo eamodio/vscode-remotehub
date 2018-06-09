@@ -14,7 +14,6 @@ import {
 } from 'vscode';
 import { fileSystemScheme } from './constants';
 import { GitHubApi } from './gitHubApi';
-import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { Logger } from './logger';
 import fetch from 'node-fetch';
 
@@ -144,7 +143,7 @@ export class SourcegraphApi extends Disposable {
         const capabilities = folder && this._capabilitiesMap.get(folder);
         if (capabilities && !SourcegraphApi.ensureCapability(capabilities, method)) return undefined;
 
-        const sgUri = SourcegraphApi.toSourcegraphUri(uri, this._github.getSourcegraphShaForUri(uri)!);
+        const sgUri = SourcegraphApi.toSourcegraphUri(uri, (await this._github.getSourcegraphRevisionForUri(uri))!);
         if (method.startsWith('textDocument/')) {
             params.textDocument = { uri: sgUri.toString(true) };
         }
@@ -224,14 +223,14 @@ export class SourcegraphApi extends Disposable {
         });
     }
 
-    private static toSourcegraphUri(uri: Uri, sha: string): Uri {
-        const [owner, repo, path] = GitHubFileSystemProvider.extractRepoInfo(uri);
+    private static toSourcegraphUri(uri: Uri, rev: string): Uri {
+        const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
 
-        // e.g. git://github.com/eamodio/vscode-gitlens?<sha>#src/extension.ts
+        // e.g. git://github.com/eamodio/vscode-gitlens?<rev>#src/extension.ts
         return uri.with({
             scheme: 'git',
             path: `/${owner}/${repo}`,
-            query: sha,
+            query: rev,
             fragment: path
         });
     }

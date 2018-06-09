@@ -3,7 +3,7 @@ import { ExtensionContext } from 'vscode';
 import { Commands } from './commands';
 import { Config, configuration } from './configuration';
 import { GitHubApi } from './gitHubApi';
-import { GitHubFileSystemProvider } from './githubFileSystemProvider';
+import { GitHubFileSystemProvider } from './gitHubFileSystemProvider';
 import { Logger } from './logger';
 import { RemoteLanguageProvider } from './remoteLanguageProvider';
 import { SourcegraphApi } from './sourcegraphApi';

@@ -55,14 +55,15 @@ export class RemoteLanguageProvider extends Disposable implements DefinitionProv
 
     provideWorkspaceSymbols(query: string, token: CancellationToken): ProviderResult<SymbolInformation[]> {
         const editor = window.activeTextEditor;
+
         let uri;
-        if (editor === undefined) {
+        if (editor === undefined || editor.document.uri.scheme !== fileSystemScheme) {
             uri = workspace.workspaceFolders && workspace.workspaceFolders[0].uri;
         }
         else {
             uri = editor.document.uri;
         }
-        if (uri === undefined) return undefined;
+        if (uri === undefined || uri.scheme !== fileSystemScheme) return undefined;
 
         return this._sourcegraph.workspaceSymbols(query, uri, token);
     }

@@ -4,7 +4,6 @@ import { Config, configuration } from './configuration';
 import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
 import { Variables } from 'graphql-request/dist/src/types';
-import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
 
@@ -50,32 +49,39 @@ export class GitHubApi extends Disposable {
         return this._client;
     }
 
-    getLatestShaForUri(uri: Uri) {
+    getLatestRevisionForUri(uri: Uri) {
         return this._latestCommitForUriMap.get(uri.toString());
     }
 
-    getLatestShaCommitForUri(uri: Uri) {
+    getLatestRevisionCommitForUri(uri: Uri) {
         const folder = workspace.getWorkspaceFolder(uri);
         return this._latestCommitMap.get(folder!);
     }
 
-    getSourcegraphShaForUri(uri: Uri) {
-        return this.getLatestShaCommitForUri(uri);
+    async getSourcegraphRevisionForUri(uri: Uri) {
+        const rev = this.getLatestRevisionCommitForUri(uri);
+        if (rev !== undefined) return rev;
+
+        return this.trackRepoForUri(uri);
     }
 
-    async trackRepoForUri(uri: Uri, fileSha: string) {
-        this._latestCommitForUriMap.set(uri.toString(), fileSha);
+    async trackRepoForUri(uri: Uri, fileRevision?: string) {
+        if (fileRevision) {
+            this._latestCommitForUriMap.set(uri.toString(), fileRevision);
+        }
 
         const folder = workspace.getWorkspaceFolder(uri);
         if (!folder || this._latestCommitMap.has(folder)) return;
 
-        const [owner, repo] = GitHubFileSystemProvider.extractRepoInfo(uri);
+        const [owner, repo] = GitHubApi.extractRepoInfo(uri);
 
-        // Get latest repo sha
-        const sha = await this.repositoryShaQuery(owner, repo);
-        if (sha) {
-            this._latestCommitMap.set(folder, sha);
+        // Get latest repo revision
+        const rev = await this.repositoryRevisionQuery(owner, repo);
+        if (rev) {
+            this._latestCommitMap.set(folder, rev);
         }
+
+        return rev;
     }
 
     async fsQuery<T>(uri: Uri, innerQuery: string): Promise<T | undefined> {
@@ -100,7 +106,7 @@ export class GitHubApi extends Disposable {
         }
     }
 
-    async repositoryShaQuery(owner: string, repo: string): Promise<string | undefined> {
+    async repositoryRevisionQuery(owner: string, repo: string): Promise<string | undefined> {
         try {
             const query = `query repo($owner: String!, $repo: String!) {
                 repository(owner: $owner, name: $repo) {
@@ -177,8 +183,18 @@ export class GitHubApi extends Disposable {
         }
     }
 
+    static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
+        const [, owner, repo, ...rest] = uri.path.split('/');
+
+        return [
+            owner,
+            repo,
+            rest.join('/')
+        ];
+    }
+
     private static extractFSQueryVariables(uri: Uri): Variables {
-        const [owner, repo, path] = GitHubFileSystemProvider.extractRepoInfo(uri);
+        const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
 
         return {
             owner: owner,
