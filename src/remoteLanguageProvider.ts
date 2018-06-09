@@ -10,7 +10,7 @@ import {
     TextDocument,
     window, workspace, WorkspaceSymbolProvider
 } from 'vscode';
-import { GitHubFileSystemProvider } from './githubFileSystemProvider';
+import { fileSystemScheme } from './constants';
 import { SourcegraphApi } from './sourcegraphApi';
 
 export class RemoteLanguageProvider extends Disposable implements DefinitionProvider, DocumentSymbolProvider, HoverProvider, ReferenceProvider, WorkspaceSymbolProvider {
@@ -23,10 +23,10 @@ export class RemoteLanguageProvider extends Disposable implements DefinitionProv
         super(() => this.dispose());
 
         this._disposable = Disposable.from(
-            languages.registerDefinitionProvider({ scheme: GitHubFileSystemProvider.Scheme, language: '*' }, this),
-            languages.registerDocumentSymbolProvider({ scheme: GitHubFileSystemProvider.Scheme, language: '*' }, this),
-            languages.registerHoverProvider({ scheme: GitHubFileSystemProvider.Scheme, language: '*' }, this),
-            languages.registerReferenceProvider({ scheme: GitHubFileSystemProvider.Scheme, language: '*' }, this),
+            languages.registerDefinitionProvider({ scheme: fileSystemScheme, language: '*' }, this),
+            languages.registerDocumentSymbolProvider({ scheme: fileSystemScheme, language: '*' }, this),
+            languages.registerHoverProvider({ scheme: fileSystemScheme, language: '*' }, this),
+            languages.registerReferenceProvider({ scheme: fileSystemScheme, language: '*' }, this),
             languages.registerWorkspaceSymbolProvider(this)
             // configuration.onDidChange(this.onConfigurationChanged, this)
         );

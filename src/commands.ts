@@ -1,8 +1,8 @@
 'use strict';
 import { CancellationTokenSource, commands, ConfigurationTarget, Disposable, QuickPickItem, Uri, window, workspace } from 'vscode';
 import { configuration, IConfig } from './configuration';
+import { fileSystemScheme } from './constants';
 import { GitHubApi, Repository } from './gitHubApi';
-import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { Command, createCommandDecorator } from './system';
 
 const commandRegistry: Command[] = [];
@@ -70,7 +70,7 @@ export class Commands extends Disposable {
                 continue;
             }
 
-            this.openWorkspace(Uri.parse(`${GitHubFileSystemProvider.Scheme}://github.com/${pick.repo.nameWithOwner}`), `github.com/${pick.repo.nameWithOwner}`, options.replace);
+            this.openWorkspace(Uri.parse(`${fileSystemScheme}://github.com/${pick.repo.nameWithOwner}`), `github.com/${pick.repo.nameWithOwner}`, options.replace);
             break;
         }
     }

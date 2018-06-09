@@ -12,6 +12,7 @@ import {
     Uri,
     workspace, WorkspaceFolder
 } from 'vscode';
+import { fileSystemScheme } from './constants';
 import { GitHubApi } from './gitHubApi';
 import { GitHubFileSystemProvider } from './githubFileSystemProvider';
 import { Logger } from './logger';
@@ -218,7 +219,7 @@ export class SourcegraphApi extends Disposable {
 
         // e.g. remotehub://github.com/eamodio/vscode-gitlens/src/extension.ts
         return uri.with({
-            scheme: GitHubFileSystemProvider.Scheme,
+            scheme: fileSystemScheme,
             path: `/${owner}/${repo}/${uri.fragment}`
         });
     }

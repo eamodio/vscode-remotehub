@@ -2,10 +2,9 @@
 import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemError, FileSystemProvider, FileType, Uri, workspace } from 'vscode';
 import { GitHubApi } from './gitHubApi';
 import fetch from 'node-fetch';
+import { fileSystemScheme } from './constants';
 
 export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
-
-    public static readonly Scheme = 'remotehub';
 
     private readonly _disposable: Disposable;
 
@@ -15,7 +14,7 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         super(() => this.dispose());
 
         this._disposable = Disposable.from(
-            workspace.registerFileSystemProvider(GitHubFileSystemProvider.Scheme, this, { isCaseSensitive: true })
+            workspace.registerFileSystemProvider(fileSystemScheme, this, { isCaseSensitive: true })
         );
     }
 

@@ -4,7 +4,7 @@ export * from './config';
 import { ConfigurationChangeEvent, ConfigurationTarget, Event, EventEmitter, ExtensionContext, Uri, workspace } from 'vscode';
 import { IConfig } from './config';
 // import { Container } from './container';
-import { extensionId } from './extension';
+import { extensionId } from './constants';
 import { Functions } from './system';
 
 const emptyConfig: any = new Proxy<any>({} as IConfig, {

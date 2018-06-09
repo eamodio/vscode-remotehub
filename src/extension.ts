@@ -1,9 +1,4 @@
 'use strict';
-
-export const extensionId = 'remotehub';
-export const extensionOutputChannelName = 'RemoteHub';
-export const qualifiedExtensionId = `eamodio.${extensionId}`;
-
 import { ExtensionContext } from 'vscode';
 import { Commands } from './commands';
 import { configuration, IConfig } from './configuration';

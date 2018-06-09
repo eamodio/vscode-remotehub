@@ -1,7 +1,7 @@
 'use strict';
 import { MessageItem, window } from 'vscode';
 import { TraceLevel } from '../configuration';
-import { extensionId } from '../extension';
+import { extensionId } from '../constants';
 import { Logger } from '../logger';
 
 export function createCommandDecorator(registry: Command[]): (command: string, options?: CommandOptions) => Function {
