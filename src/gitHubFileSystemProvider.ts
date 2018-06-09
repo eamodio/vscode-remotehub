@@ -8,16 +8,19 @@ import {
     FileSystemError,
     FileSystemProvider,
     FileType,
+    // TextDocument,
     Uri,
     workspace
 } from 'vscode';
 import { GitHubApi } from './gitHubApi';
-import fetch from 'node-fetch';
 import { fileSystemScheme } from './constants';
+import { Strings } from './system';
+import fetch from 'node-fetch';
 
 export class GitHubFileSystemProvider extends Disposable
     implements FileSystemProvider {
     private readonly _disposable: Disposable;
+    private _fsCache = new Map<string, any>();
 
     constructor(private readonly _github: GitHubApi) {
         super(() => this.dispose());
@@ -26,6 +29,7 @@ export class GitHubFileSystemProvider extends Disposable
             workspace.registerFileSystemProvider(fileSystemScheme, this, {
                 isCaseSensitive: true
             })
+            // workspace.onDidCloseTextDocument(this.onClosedTextDocument, this)
         );
     }
 
@@ -38,6 +42,12 @@ export class GitHubFileSystemProvider extends Disposable
         return this._onDidChangeFile.event;
     }
 
+    // private onClosedTextDocument(e: TextDocument) {
+    //     if (e.uri.scheme !== fileSystemScheme) return;
+
+    //     console.log(`onClosedTextDocument`, e.uri.toString());
+    // }
+
     watch(): Disposable {
         return { dispose: () => {} };
     }
@@ -47,7 +57,7 @@ export class GitHubFileSystemProvider extends Disposable
             return { type: FileType.Directory, size: 0, ctime: 0, mtime: 0 };
         }
 
-        const data = await this._github.fsQuery<{
+        const data = await this.fsQuery<{
             __typename: string;
             byteSize: number | undefined;
         }>(
@@ -55,7 +65,8 @@ export class GitHubFileSystemProvider extends Disposable
             `__typename
             ...on Blob {
                 byteSize
-            }`
+            }`,
+            this._fsCache
         );
 
         return {
@@ -69,7 +80,7 @@ export class GitHubFileSystemProvider extends Disposable
     }
 
     async readDirectory(uri: Uri): Promise<[string, FileType][]> {
-        const data = await this._github.fsQuery<{
+        const data = await this.fsQuery<{
             entries: { name: string; type: string }[];
         }>(
             uri,
@@ -78,7 +89,8 @@ export class GitHubFileSystemProvider extends Disposable
                     name
                     type
                 }
-            }`
+            }`,
+            this._fsCache
         );
 
         return ((data && data.entries) || []).map<[string, FileType]>(e => [
@@ -92,7 +104,7 @@ export class GitHubFileSystemProvider extends Disposable
     }
 
     async readFile(uri: Uri): Promise<Uint8Array> {
-        const data = await this._github.fsQuery<{
+        const data = await this.fsQuery<{
             oid: string;
             isBinary: boolean;
             text: string;
@@ -143,10 +155,23 @@ export class GitHubFileSystemProvider extends Disposable
         throw FileSystemError.NoPermissions;
     }
 
-    static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
-        const [, owner, repo, ...rest] = uri.path.split('/');
+    private async fsQuery<T>(
+        uri: Uri,
+        query: string,
+        cache?: Map<string, any>
+    ): Promise<T | undefined> {
+        if (cache === undefined) {
+            return await this._github.fsQuery<T>(uri, query);
+        }
 
-        return [owner, repo, rest.join('/')];
+        const key = `${uri.toString()}:${Strings.sha1(query)}`;
+
+        let data = cache.get(key);
+        if (data !== undefined) return data as T;
+
+        data = await this._github.fsQuery<T>(uri, query);
+        cache.set(key, data);
+        return data;
     }
 
     private static bufferToUint8Array(buffer: Buffer): Uint8Array {

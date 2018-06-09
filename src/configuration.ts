@@ -11,7 +11,6 @@ import {
     workspace
 } from 'vscode';
 import { Config } from './config';
-// import { Container } from './container';
 import { extensionId } from './constants';
 import { Functions } from './system';
 
@@ -38,8 +37,6 @@ export class Configuration {
 
     private onConfigurationChanged(e: ConfigurationChangeEvent) {
         if (!e.affectsConfiguration(extensionId, null!)) return;
-
-        // Container.resetConfig();
 
         this._onDidChange.fire(e);
     }
