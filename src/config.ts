@@ -1,5 +1,10 @@
 'use strict';
 
+export enum Search {
+    GitHub = 'github',
+    Sourcegraph = 'sourcegraph'
+}
+
 export enum TraceLevel {
     Silent = 'silent',
     Errors = 'errors',
@@ -9,5 +14,6 @@ export enum TraceLevel {
 
 export interface Config {
     githubToken: string;
+    search: Search;
     traceLevel: TraceLevel;
 }

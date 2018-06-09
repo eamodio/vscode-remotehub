@@ -1,6 +1,6 @@
 # RemoteHub
 
-RemoteHub is a **proof-of-concept** extension that allows for opening a remote [GitHub](https://github.com) repository as a workspace. Experimental language services (Go to definition, hovers, references, etc) are provided by [Sourcegraph](https://sourcegraph.com) and will only work on public repositories that are enabled and supported by them.
+RemoteHub is a **proof-of-concept** extension that allows for opening a remote [GitHub](https://github.com) repository as a workspace. Experimental code search and language services (Go to definition, hovers, references, etc) are provided by [Sourcegraph](https://sourcegraph.com) and will only work on public repositories that are enabled and supported by them.
 
 NOTE: This extension is in the **very** early stages and is likely to have lots of bugs and only work in certain cases, so please keep that in mind. Also _please_ file GitHub issues for any questions, features, or issues. Thanks!
 
@@ -33,6 +33,7 @@ Copy the generated access token to your clipboard and paste it into the input bo
 | Name                    | Description                                                                                      |
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | `remotehub.githubToken` | Specifies the GitHub personal access token to use for authentication with the GitHub GraphQL API |
+| `remotehub.search`      | Specifies the remote service to use for repository search<br />`github` - use GitHub search (only filename search)<br />`sourcegraph` - use Sourcegraph search |
 | `remotehub.traceLevel`  | Specifies how much (if any) output will be sent to the RemoteHub output channel                  |
 
 ## Contributors 🙏&#x2764;

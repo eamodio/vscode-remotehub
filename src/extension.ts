@@ -7,6 +7,7 @@ import { GitHubApi } from './gitHubApi';
 import { GitHubFileSystemProvider } from './gitHubFileSystemProvider';
 import { Logger } from './logger';
 import { RemoteLanguageProvider } from './remoteLanguageProvider';
+import { RemoteSearchProvider } from './remoteSearchProvider';
 import { SourcegraphApi } from './sourcegraphApi';
 
 export async function activate(context: ExtensionContext) {
@@ -21,13 +22,15 @@ export async function activate(context: ExtensionContext) {
     }
 
     const sourcegraph = new SourcegraphApi();
+    const gitHubFS = new GitHubFileSystemProvider(github);
     context.subscriptions.push(
         workspace.onDidChangeWorkspaceFolders(workspaceFoldersChanged),
         github,
         sourcegraph,
         commands,
-        new GitHubFileSystemProvider(github),
-        new RemoteLanguageProvider(sourcegraph)
+        gitHubFS,
+        new RemoteLanguageProvider(sourcegraph),
+        new RemoteSearchProvider(gitHubFS, sourcegraph)
     );
 
     workspaceFoldersChanged({

@@ -23,6 +23,7 @@
     "main": "./out/extension",
     "icon": "images/remotehub-icon.png",
     "preview": true,
+    "enableProposedApi": true,
     "categories": [
         "Other"
     ],
@@ -46,6 +47,16 @@
                 "remotehub.githubToken": {
                     "type": "string",
                     "description": "Specifies the GitHub personal access token to use for authentication with the GitHub GraphQL API",
+                    "scope": "window"
+                },
+                "remotehub.search": {
+                    "type": "string",
+                    "default": "sourcegraph",
+                    "enum": [
+                        "github",
+                        "sourcegraph"
+                    ],
+                    "description": "Specifies the remote service to use for repository search\n `github` - use GitHub search (only filename search)\n `sourcegraph` - use Sourcegraph search",
                     "scope": "window"
                 },
                 "remotehub.traceLevel": {
