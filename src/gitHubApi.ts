@@ -1,5 +1,11 @@
 'use strict';
-import { ConfigurationChangeEvent, Disposable, Uri, workspace, WorkspaceFolder } from 'vscode';
+import {
+    ConfigurationChangeEvent,
+    Disposable,
+    Uri,
+    workspace,
+    WorkspaceFolder
+} from 'vscode';
 import { Config, configuration } from './configuration';
 import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
@@ -8,7 +14,6 @@ import { Variables } from 'graphql-request/dist/src/types';
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
 
 export class GitHubApi extends Disposable {
-
     private readonly _disposable: Disposable;
     private readonly _latestCommitMap = new Map<WorkspaceFolder, string>();
     private readonly _latestCommitForUriMap = new Map<string, string>();
@@ -29,7 +34,10 @@ export class GitHubApi extends Disposable {
     private async onConfigurationChanged(e: ConfigurationChangeEvent) {
         const initializing = configuration.initializing(e);
 
-        if (!initializing && configuration.changed(e, configuration.name('githubToken').value)) {
+        if (
+            !initializing &&
+            configuration.changed(e, configuration.name('githubToken').value)
+        ) {
             this._client = undefined;
         }
     }
@@ -38,7 +46,11 @@ export class GitHubApi extends Disposable {
     private get client(): GraphQLClient {
         if (this._client === undefined) {
             const cfg = configuration.get<Config>();
-            if (!cfg.githubToken) throw new Error('No GitHub personal access token could be found');
+            if (!cfg.githubToken) {
+                throw new Error(
+                    'No GitHub personal access token could be found'
+                );
+            }
 
             this._client = new GraphQLClient('https://api.github.com/graphql', {
                 headers: {
@@ -97,16 +109,20 @@ export class GitHubApi extends Disposable {
             const variables = GitHubApi.extractFSQueryVariables(uri);
             Logger.log(query, JSON.stringify(variables));
 
-            const rsp = await this.client.request<{ repository: { object: T } }>(query, variables);
+            const rsp = await this.client.request<{
+                repository: { object: T };
+            }>(query, variables);
             return rsp.repository.object;
-        }
-        catch (ex) {
+        } catch (ex) {
             Logger.error(ex);
             return undefined;
         }
     }
 
-    async repositoryRevisionQuery(owner: string, repo: string): Promise<string | undefined> {
+    async repositoryRevisionQuery(
+        owner: string,
+        repo: string
+    ): Promise<string | undefined> {
         try {
             const query = `query repo($owner: String!, $repo: String!) {
                 repository(owner: $owner, name: $repo) {
@@ -121,12 +137,13 @@ export class GitHubApi extends Disposable {
             const variables = { owner: owner, repo: repo };
             Logger.log(query, JSON.stringify(variables));
 
-            const rsp = await this.client.request<{ repository: { defaultBranchRef: { target: { oid: string } } } }>(query, variables);
+            const rsp = await this.client.request<{
+                repository: { defaultBranchRef: { target: { oid: string } } };
+            }>(query, variables);
             if (rsp.repository == null) return undefined;
 
             return rsp.repository.defaultBranchRef.target.oid;
-        }
-        catch (ex) {
+        } catch (ex) {
             Logger.error(ex);
             return undefined;
         }
@@ -139,16 +156,13 @@ export class GitHubApi extends Disposable {
         if (match != null) {
             const [, owner, repo] = match;
             searchQuery = `${repo} in:name user:${owner} sort:stars-desc`;
-        }
-        else {
+        } else {
             const [ownerOrRepo, repo] = rawQuery.split('/');
             if (ownerOrRepo && repo) {
                 searchQuery = `${repo} in:name user:${ownerOrRepo} sort:stars-desc`;
-            }
-            else if (ownerOrRepo && repo !== undefined) {
+            } else if (ownerOrRepo && repo !== undefined) {
                 searchQuery = `user:${ownerOrRepo} sort:stars-desc`;
-            }
-            else {
+            } else {
                 searchQuery = `${ownerOrRepo} in:name sort:stars-desc`;
             }
         }
@@ -172,12 +186,13 @@ export class GitHubApi extends Disposable {
             const variables = { query: searchQuery };
             Logger.log(query, JSON.stringify(variables));
 
-            const rsp = await this.client.request<{ search: { edges: { node: Repository }[] } }>(query, variables);
+            const rsp = await this.client.request<{
+                search: { edges: { node: Repository }[] };
+            }>(query, variables);
             if (rsp.search == null) return [];
 
             return rsp.search.edges.map(e => e.node);
-        }
-        catch (ex) {
+        } catch (ex) {
             Logger.error(ex);
             return [];
         }
@@ -186,11 +201,7 @@ export class GitHubApi extends Disposable {
     static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
         const [, owner, repo, ...rest] = uri.path.split('/');
 
-        return [
-            owner,
-            repo,
-            rest.join('/')
-        ];
+        return [owner, repo, rest.join('/')];
     }
 
     private static extractFSQueryVariables(uri: Uri): Variables {

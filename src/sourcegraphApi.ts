@@ -1,16 +1,19 @@
 'use strict';
 import {
     CancellationToken,
-    Definition, Disposable,
+    Definition,
+    Disposable,
     Hover,
     Location,
     MarkdownString,
     Position,
-    Range, ReferenceContext,
+    Range,
+    ReferenceContext,
     SymbolInformation,
     TextDocument,
     Uri,
-    workspace, WorkspaceFolder
+    workspace,
+    WorkspaceFolder
 } from 'vscode';
 import { fileSystemScheme } from './constants';
 import { GitHubApi } from './gitHubApi';
@@ -20,19 +23,22 @@ import fetch from 'node-fetch';
 const hoverTypeRegex = /\*\*(.*)?\*\*(?: \_\((.*)\)\_)?/;
 
 export class SourcegraphApi extends Disposable {
+    private readonly _capabilitiesMap = new Map<
+        WorkspaceFolder,
+        LspCapabilities
+    >();
 
-    private readonly _capabilitiesMap = new Map<WorkspaceFolder, LspCapabilities>();
-
-    constructor(
-        public readonly _github: GitHubApi
-    ) {
+    constructor(public readonly _github: GitHubApi) {
         super(() => this.dispose());
     }
 
-    dispose() {
-    }
+    dispose() {}
 
-    async definition(document: TextDocument, position: Position, token: CancellationToken): Promise<Definition | undefined> {
+    async definition(
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken
+    ): Promise<Definition | undefined> {
         const params = {
             position: {
                 character: position.character,
@@ -40,37 +46,62 @@ export class SourcegraphApi extends Disposable {
             }
         };
 
-        const result = await this.lsp<{ uri: string, range: Range }[]>('textDocument/definition', params, document.uri, document.languageId, token);
+        const result = await this.lsp<{ uri: string; range: Range }[]>(
+            'textDocument/definition',
+            params,
+            document.uri,
+            document.languageId,
+            token
+        );
         if (!result) return undefined;
 
-        const definition = result.map(d =>
-            new Location(
-                SourcegraphApi.toRemoteHubUri(Uri.parse(d.uri)),
-                SourcegraphApi.toRange(d.range)
-            ));
+        const definition = result.map(
+            d =>
+                new Location(
+                    SourcegraphApi.toRemoteHubUri(Uri.parse(d.uri)),
+                    SourcegraphApi.toRange(d.range)
+                )
+        );
         return definition;
     }
 
-    async documentSymbols(document: TextDocument, token: CancellationToken): Promise<SymbolInformation[] | undefined> {
+    async documentSymbols(
+        document: TextDocument,
+        token: CancellationToken
+    ): Promise<SymbolInformation[] | undefined> {
         const params = {};
 
-        const result = await this.lsp<any[]>('textDocument/documentSymbol', params, document.uri, document.languageId, token);
+        const result = await this.lsp<any[]>(
+            'textDocument/documentSymbol',
+            params,
+            document.uri,
+            document.languageId,
+            token
+        );
         if (!result) return undefined;
 
-        const symbols = result.map(s =>
-            ({
-                name: s.name,
-                containerName: s.containerName,
-                kind: s.kind,
-                location: new Location(
-                    SourcegraphApi.toRemoteHubUri(Uri.parse(s.location.uri)),
-                    SourcegraphApi.toRange(s.location.range)
-                )
-            } as SymbolInformation));
+        const symbols = result.map(
+            s =>
+                ({
+                    name: s.name,
+                    containerName: s.containerName,
+                    kind: s.kind,
+                    location: new Location(
+                        SourcegraphApi.toRemoteHubUri(
+                            Uri.parse(s.location.uri)
+                        ),
+                        SourcegraphApi.toRange(s.location.range)
+                    )
+                } as SymbolInformation)
+        );
         return symbols;
     }
 
-    async hover(document: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
+    async hover(
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken
+    ): Promise<Hover | undefined> {
         const params = {
             position: {
                 character: position.character,
@@ -78,7 +109,16 @@ export class SourcegraphApi extends Disposable {
             }
         };
 
-        const result = await this.lsp<{ contents: [{ value: string, language: string }, string], range: Range }>('textDocument/hover', params, document.uri, document.languageId, token);
+        const result = await this.lsp<{
+            contents: [{ value: string; language: string }, string];
+            range: Range;
+        }>(
+            'textDocument/hover',
+            params,
+            document.uri,
+            document.languageId,
+            token
+        );
         if (!result) return undefined;
 
         const s = new MarkdownString();
@@ -89,13 +129,23 @@ export class SourcegraphApi extends Disposable {
 
         const includeType = type !== 'function';
 
-        s.appendCodeblock(`${includeType ? `(${modifier ? `${modifier} ` : ''}${type}) ` : ''}${code.value}`, code.language);
+        s.appendCodeblock(
+            `${
+                includeType ? `(${modifier ? `${modifier} ` : ''}${type}) ` : ''
+            }${code.value}`,
+            code.language
+        );
 
         const hover = new Hover(s, SourcegraphApi.toRange(result.range));
         return hover;
     }
 
-    async references(document: TextDocument, position: Position, context: ReferenceContext, token: CancellationToken): Promise<Location[] | undefined> {
+    async references(
+        document: TextDocument,
+        position: Position,
+        context: ReferenceContext,
+        token: CancellationToken
+    ): Promise<Location[] | undefined> {
         const params = {
             position: {
                 character: position.character,
@@ -106,44 +156,80 @@ export class SourcegraphApi extends Disposable {
             }
         };
 
-        const result = await this.lsp<{ uri: string, range: Range }[]>('textDocument/references', params, document.uri, document.languageId, token);
+        const result = await this.lsp<{ uri: string; range: Range }[]>(
+            'textDocument/references',
+            params,
+            document.uri,
+            document.languageId,
+            token
+        );
         if (!result) return undefined;
 
-        const locations = result.map(d =>
-            new Location(
-                SourcegraphApi.toRemoteHubUri(Uri.parse(d.uri)),
-                SourcegraphApi.toRange(d.range)
-            ));
+        const locations = result.map(
+            d =>
+                new Location(
+                    SourcegraphApi.toRemoteHubUri(Uri.parse(d.uri)),
+                    SourcegraphApi.toRange(d.range)
+                )
+        );
         return locations;
     }
 
-    async workspaceSymbols(query: string, uri: Uri, token: CancellationToken): Promise<SymbolInformation[] | undefined> {
+    async workspaceSymbols(
+        query: string,
+        uri: Uri,
+        token: CancellationToken
+    ): Promise<SymbolInformation[] | undefined> {
         const params = {
             query: query
         };
 
-        const result = await this.lsp<any[]>('workspace/symbol', params, uri, 'typescript', token);
+        const result = await this.lsp<any[]>(
+            'workspace/symbol',
+            params,
+            uri,
+            'typescript',
+            token
+        );
         if (!result) return undefined;
 
-        const symbols = result.map(s =>
-            ({
-                name: s.name,
-                containerName: s.containerName,
-                kind: s.kind,
-                location: new Location(
-                    SourcegraphApi.toRemoteHubUri(Uri.parse(s.location.uri)),
-                    SourcegraphApi.toRange(s.location.range)
-                )
-            } as SymbolInformation));
+        const symbols = result.map(
+            s =>
+                ({
+                    name: s.name,
+                    containerName: s.containerName,
+                    kind: s.kind,
+                    location: new Location(
+                        SourcegraphApi.toRemoteHubUri(
+                            Uri.parse(s.location.uri)
+                        ),
+                        SourcegraphApi.toRange(s.location.range)
+                    )
+                } as SymbolInformation)
+        );
         return symbols;
     }
 
-    private async lsp<T>(method: string, params: { [key: string]: any }, uri: Uri, languageId: string, token: CancellationToken): Promise<T | undefined> {
+    private async lsp<T>(
+        method: string,
+        params: { [key: string]: any },
+        uri: Uri,
+        languageId: string,
+        token: CancellationToken
+    ): Promise<T | undefined> {
         const folder = workspace.getWorkspaceFolder(uri);
         const capabilities = folder && this._capabilitiesMap.get(folder);
-        if (capabilities && !SourcegraphApi.ensureCapability(capabilities, method)) return undefined;
+        if (
+            capabilities &&
+            !SourcegraphApi.ensureCapability(capabilities, method)
+        ) {
+            return undefined;
+        }
 
-        const sgUri = SourcegraphApi.toSourcegraphUri(uri, (await this._github.getSourcegraphRevisionForUri(uri))!);
+        const sgUri = SourcegraphApi.toSourcegraphUri(
+            uri,
+            (await this._github.getSourcegraphRevisionForUri(uri))!
+        );
         if (method.startsWith('textDocument/')) {
             params.textDocument = { uri: sgUri.toString(true) };
         }
@@ -180,37 +266,50 @@ export class SourcegraphApi extends Disposable {
                 }
             );
 
-            const json = await resp.json() as [LspResponse<{ capabilities: LspCapabilities }>, LspResponse<T>];
+            const json = (await resp.json()) as [
+                LspResponse<{ capabilities: LspCapabilities }>,
+                LspResponse<T>
+            ];
             const [lspInitResp, lspMethodResp] = json;
             if (lspInitResp.error || lspMethodResp.error) {
                 if (lspInitResp.error) {
                     Logger.warn(`lsp:initialize: ${lspInitResp.error.message}`);
                 }
                 if (lspMethodResp.error) {
-                    Logger.warn(`lsp:${method}: ${lspMethodResp.error.message}`);
+                    Logger.warn(
+                        `lsp:${method}: ${lspMethodResp.error.message}`
+                    );
                 }
 
                 return undefined;
             }
 
-            const { result: { capabilities: caps } } = lspInitResp;
+            const {
+                result: { capabilities: caps }
+            } = lspInitResp;
 
             if (caps && folder && !capabilities) {
                 this._capabilitiesMap.set(folder, caps);
 
-                if (!SourcegraphApi.ensureCapability(caps, method)) return undefined;
+                if (!SourcegraphApi.ensureCapability(caps, method)) {
+                    return undefined;
+                }
             }
 
             return lspMethodResp.result;
-        }
-        catch (ex) {
+        } catch (ex) {
             Logger.error(ex);
             return undefined;
         }
     }
 
     private static toRange(range: Range): Range {
-        return new Range(range.start.line, range.start.character, range.end.line, range.end.character);
+        return new Range(
+            range.start.line,
+            range.start.character,
+            range.end.line,
+            range.end.character
+        );
     }
 
     private static toRemoteHubUri(uri: Uri): Uri {
@@ -235,7 +334,10 @@ export class SourcegraphApi extends Disposable {
         });
     }
 
-    private static ensureCapability(capabilities: LspCapabilities, method: string) {
+    private static ensureCapability(
+        capabilities: LspCapabilities,
+        method: string
+    ) {
         switch (method) {
             case 'textDocument/definition':
                 if (!capabilities.definitionProvider) return false;

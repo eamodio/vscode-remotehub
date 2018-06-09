@@ -29,4 +29,4 @@ export async function activate(context: ExtensionContext) {
     );
 }
 
-export function deactivate() { }
+export function deactivate() {}

@@ -1,5 +1,10 @@
 'use strict';
-import { ConfigurationChangeEvent, ExtensionContext, OutputChannel, window } from 'vscode';
+import {
+    ConfigurationChangeEvent,
+    ExtensionContext,
+    OutputChannel,
+    window
+} from 'vscode';
 import { configuration, TraceLevel } from './configuration';
 import { extensionOutputChannelName } from './constants';
 // import { Telemetry } from './telemetry';
@@ -9,12 +14,13 @@ const ConsolePrefix = `[${extensionOutputChannelName}]`;
 const isDebuggingRegex = /^--inspect(-brk)?=?/;
 
 export class Logger {
-
     static level: TraceLevel = TraceLevel.Silent;
     static output: OutputChannel | undefined;
 
     static configure(context: ExtensionContext) {
-        context.subscriptions.push(configuration.onDidChange(this.onConfigurationChanged, this));
+        context.subscriptions.push(
+            configuration.onDidChange(this.onConfigurationChanged, this)
+        );
         this.onConfigurationChanged(configuration.initializingChangeEvent);
     }
 
@@ -30,9 +36,10 @@ export class Logger {
                     this.output.dispose();
                     this.output = undefined;
                 }
-            }
-            else {
-                this.output = this.output || window.createOutputChannel(extensionOutputChannelName);
+            } else {
+                this.output =
+                    this.output ||
+                    window.createOutputChannel(extensionOutputChannelName);
             }
         }
     }
@@ -42,18 +49,38 @@ export class Logger {
             console.log(this.timestamp, ConsolePrefix, message, ...params);
         }
 
-        if (this.output !== undefined && (this.level === TraceLevel.Verbose || this.level === TraceLevel.Debug)) {
-            this.output.appendLine((Logger.isDebugging ? [this.timestamp, message, ...params] : [message, ...params]).join(' '));
+        if (
+            this.output !== undefined &&
+            (this.level === TraceLevel.Verbose ||
+                this.level === TraceLevel.Debug)
+        ) {
+            this.output.appendLine(
+                (Logger.isDebugging
+                    ? [this.timestamp, message, ...params]
+                    : [message, ...params]
+                ).join(' ')
+            );
         }
     }
 
     static error(ex: Error, classOrMethod?: string, ...params: any[]): void {
         if (Logger.isDebugging) {
-            console.error(this.timestamp, ConsolePrefix, classOrMethod, ...params, ex);
+            console.error(
+                this.timestamp,
+                ConsolePrefix,
+                classOrMethod,
+                ...params,
+                ex
+            );
         }
 
         if (this.output !== undefined && this.level !== TraceLevel.Silent) {
-            this.output.appendLine((Logger.isDebugging ? [this.timestamp, classOrMethod, ...params, ex] : [classOrMethod, ...params, ex]).join(' '));
+            this.output.appendLine(
+                (Logger.isDebugging
+                    ? [this.timestamp, classOrMethod, ...params, ex]
+                    : [classOrMethod, ...params, ex]
+                ).join(' ')
+            );
         }
 
         // Telemetry.trackException(ex);
@@ -65,7 +92,12 @@ export class Logger {
         }
 
         if (this.output !== undefined && this.level !== TraceLevel.Silent) {
-            this.output.appendLine((Logger.isDebugging ? [this.timestamp, message, ...params] : [message, ...params]).join(' '));
+            this.output.appendLine(
+                (Logger.isDebugging
+                    ? [this.timestamp, message, ...params]
+                    : [message, ...params]
+                ).join(' ')
+            );
         }
     }
 
@@ -77,7 +109,12 @@ export class Logger {
 
     private static get timestamp(): string {
         const now = new Date();
-        return `[${now.toISOString().replace(/T/, ' ').replace(/\..+/, '')}:${('00' + now.getUTCMilliseconds()).slice(-3)}]`;
+        return `[${now
+            .toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, '')}:${('00' + now.getUTCMilliseconds()).slice(
+            -3
+        )}]`;
     }
 
     private static _isDebugging: boolean | undefined;

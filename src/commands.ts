@@ -1,5 +1,14 @@
 'use strict';
-import { CancellationTokenSource, commands, ConfigurationTarget, Disposable, QuickPickItem, Uri, window, workspace } from 'vscode';
+import {
+    CancellationTokenSource,
+    commands,
+    ConfigurationTarget,
+    Disposable,
+    QuickPickItem,
+    Uri,
+    window,
+    workspace
+} from 'vscode';
 import { Config, configuration } from './configuration';
 import { fileSystemScheme } from './constants';
 import { GitHubApi, Repository } from './gitHubApi';
@@ -9,16 +18,17 @@ const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
 
 export class Commands extends Disposable {
-
     private readonly _disposable: Disposable;
 
-    constructor(
-        private readonly _github: GitHubApi
-    ) {
+    constructor(private readonly _github: GitHubApi) {
         super(() => this.dispose);
 
         this._disposable = Disposable.from(
-            ...commandRegistry.map(({ name, key, method }) => commands.registerCommand(name, (...args: any[]) => method.apply(this, args)))
+            ...commandRegistry.map(({ name, key, method }) =>
+                commands.registerCommand(name, (...args: any[]) =>
+                    method.apply(this, args)
+                )
+            )
         );
     }
 
@@ -32,14 +42,16 @@ export class Commands extends Disposable {
     }
 
     @command('openRepository')
-    async openRepository(options: { replace: boolean } = { replace: true}) {
+    async openRepository(options: { replace: boolean } = { replace: true }) {
         if (!(await this.ensureTokens())) return;
 
         let initialValue: string | undefined;
         while (true) {
             const query = await window.showInputBox({
-                placeHolder: 'e.g. vscode-gitlens, eamodio/, eamodio/vscode-gitlens, or https://github.com/eamodio/vscode-gitlens',
-                prompt: 'Enter a value or url to use to search for repositories',
+                placeHolder:
+                    'e.g. vscode-gitlens, eamodio/, eamodio/vscode-gitlens, or https://github.com/eamodio/vscode-gitlens',
+                prompt:
+                    'Enter a value or url to use to search for repositories',
                 value: initialValue,
                 ignoreFocusOut: true
             });
@@ -70,7 +82,15 @@ export class Commands extends Disposable {
                 continue;
             }
 
-            this.openWorkspace(Uri.parse(`${fileSystemScheme}://github.com/${pick.repo.nameWithOwner}`), `github.com/${pick.repo.nameWithOwner}`, options.replace);
+            this.openWorkspace(
+                Uri.parse(
+                    `${fileSystemScheme}://github.com/${
+                        pick.repo.nameWithOwner
+                    }`
+                ),
+                `github.com/${pick.repo.nameWithOwner}`,
+                options.replace
+            );
             break;
         }
     }
@@ -81,19 +101,28 @@ export class Commands extends Disposable {
             const token = await window.showInputBox({
                 placeHolder: 'Generate a personal access token from github.com',
                 prompt: 'Enter a GitHub personal access token',
-                validateInput: (value: string) => value ? undefined : 'Must be a valid GitHub personal access token',
+                validateInput: (value: string) =>
+                    value
+                        ? undefined
+                        : 'Must be a valid GitHub personal access token',
                 ignoreFocusOut: true
             });
             if (!token) return false;
 
-            await configuration.update(configuration.name('githubToken').value, token, ConfigurationTarget.Global);
+            await configuration.update(
+                configuration.name('githubToken').value,
+                token,
+                ConfigurationTarget.Global
+            );
         }
 
         return true;
     }
 
     openWorkspace(uri: Uri, name: string, replace: boolean) {
-        const count = (workspace.workspaceFolders && workspace.workspaceFolders.length) || 0;
+        const count =
+            (workspace.workspaceFolders && workspace.workspaceFolders.length) ||
+            0;
         return workspace.updateWorkspaceFolders(
             replace ? 0 : count,
             replace ? count : 0,
@@ -101,14 +130,25 @@ export class Commands extends Disposable {
         );
     }
 
-    private async searchForRepositories(query: string, cancellation: CancellationTokenSource) {
+    private async searchForRepositories(
+        query: string,
+        cancellation: CancellationTokenSource
+    ) {
         const repos = await this._github.repositoriesQuery(query);
         if (repos.length === 0) {
             cancellation.cancel();
             return [];
         }
 
-        const items = repos.map(r => ({ label: r.name, description: r.url, detail: r.description, repo: r } as RepositoryQuickPickItem));
+        const items = repos.map(
+            r =>
+                ({
+                    label: r.name,
+                    description: r.url,
+                    detail: r.description,
+                    repo: r
+                } as RepositoryQuickPickItem)
+        );
 
         items.splice(0, 0, {
             label: `go back \u21a9`,

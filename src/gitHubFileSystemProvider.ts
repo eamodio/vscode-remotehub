@@ -1,20 +1,31 @@
 'use strict';
-import { Disposable, Event, EventEmitter, FileChangeEvent, FileStat, FileSystemError, FileSystemProvider, FileType, Uri, workspace } from 'vscode';
+import {
+    Disposable,
+    Event,
+    EventEmitter,
+    FileChangeEvent,
+    FileStat,
+    FileSystemError,
+    FileSystemProvider,
+    FileType,
+    Uri,
+    workspace
+} from 'vscode';
 import { GitHubApi } from './gitHubApi';
 import fetch from 'node-fetch';
 import { fileSystemScheme } from './constants';
 
-export class GitHubFileSystemProvider extends Disposable implements FileSystemProvider {
-
+export class GitHubFileSystemProvider extends Disposable
+    implements FileSystemProvider {
     private readonly _disposable: Disposable;
 
-    constructor(
-        private readonly _github: GitHubApi
-    ) {
+    constructor(private readonly _github: GitHubApi) {
         super(() => this.dispose());
 
         this._disposable = Disposable.from(
-            workspace.registerFileSystemProvider(fileSystemScheme, this, { isCaseSensitive: true })
+            workspace.registerFileSystemProvider(fileSystemScheme, this, {
+                isCaseSensitive: true
+            })
         );
     }
 
@@ -28,13 +39,18 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     watch(): Disposable {
-        return { dispose: () => { } };
+        return { dispose: () => {} };
     }
 
     async stat(uri: Uri): Promise<FileStat> {
-        if (uri.path === '' || uri.path.lastIndexOf('/') === 0) return { type: FileType.Directory, size: 0, ctime: 0, mtime: 0 };
+        if (uri.path === '' || uri.path.lastIndexOf('/') === 0) {
+            return { type: FileType.Directory, size: 0, ctime: 0, mtime: 0 };
+        }
 
-        const data = await this._github.fsQuery<{ __typename: string, byteSize: number | undefined }>(
+        const data = await this._github.fsQuery<{
+            __typename: string;
+            byteSize: number | undefined;
+        }>(
             uri,
             `__typename
             ...on Blob {
@@ -43,7 +59,9 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         );
 
         return {
-            type: GitHubFileSystemProvider.typeToFileType(data && data.__typename),
+            type: GitHubFileSystemProvider.typeToFileType(
+                data && data.__typename
+            ),
             size: (data && data.byteSize) || 0,
             ctime: 0,
             mtime: 0
@@ -51,7 +69,9 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readDirectory(uri: Uri): Promise<[string, FileType][]> {
-        const data = await this._github.fsQuery<{ entries: { name: string, type: string }[] }>(
+        const data = await this._github.fsQuery<{
+            entries: { name: string; type: string }[];
+        }>(
             uri,
             `... on Tree {
                 entries {
@@ -61,8 +81,10 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
             }`
         );
 
-        return ((data && data.entries) || [])
-            .map<[string, FileType]>(e => [e.name, GitHubFileSystemProvider.typeToFileType(e.type)]);
+        return ((data && data.entries) || []).map<[string, FileType]>(e => [
+            e.name,
+            GitHubFileSystemProvider.typeToFileType(e.type)
+        ]);
     }
 
     createDirectory(): void | Thenable<void> {
@@ -70,7 +92,11 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     }
 
     async readFile(uri: Uri): Promise<Uint8Array> {
-        const data = await this._github.fsQuery<{ oid: string, isBinary: boolean, text: string }>(
+        const data = await this._github.fsQuery<{
+            oid: string;
+            isBinary: boolean;
+            text: string;
+        }>(
             uri,
             `... on Blob {
                 oid,
@@ -87,11 +113,14 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         if (data && data.isBinary) {
             const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
             // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
-            const downloadUri = uri.with({ scheme: 'https', authority: 'raw.githubusercontent.com', path: `/${owner}/${repo}/HEAD/${path}` });
+            const downloadUri = uri.with({
+                scheme: 'https',
+                authority: 'raw.githubusercontent.com',
+                path: `/${owner}/${repo}/HEAD/${path}`
+            });
 
             buffer = await GitHubFileSystemProvider.downloadBinary(downloadUri);
-        }
-        else {
+        } else {
             buffer = Buffer.from((data && data.text) || '');
         }
 
@@ -117,15 +146,15 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
     static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
         const [, owner, repo, ...rest] = uri.path.split('/');
 
-        return [
-            owner,
-            repo,
-            rest.join('/')
-        ];
+        return [owner, repo, rest.join('/')];
     }
 
     private static bufferToUint8Array(buffer: Buffer): Uint8Array {
-        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
+        return new Uint8Array(
+            buffer.buffer,
+            buffer.byteOffset,
+            buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT
+        );
     }
 
     private static async downloadBinary(uri: Uri) {
@@ -139,9 +168,12 @@ export class GitHubFileSystemProvider extends Disposable implements FileSystemPr
         }
 
         switch (type) {
-            case 'blob': return FileType.File;
-            case 'tree': return FileType.Directory;
-            default: return FileType.Unknown;
+            case 'blob':
+                return FileType.File;
+            case 'tree':
+                return FileType.Directory;
+            default:
+                return FileType.Unknown;
         }
     }
 }

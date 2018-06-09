@@ -1,32 +1,56 @@
 'use strict';
 import {
     CancellationToken,
-    Definition, DefinitionProvider, Disposable, DocumentSymbolProvider,
-    Hover, HoverProvider,
-    languages, Location,
-    Position, ProviderResult,
-    ReferenceContext, ReferenceProvider,
+    Definition,
+    DefinitionProvider,
+    Disposable,
+    DocumentSymbolProvider,
+    Hover,
+    HoverProvider,
+    languages,
+    Location,
+    Position,
+    ProviderResult,
+    ReferenceContext,
+    ReferenceProvider,
     SymbolInformation,
     TextDocument,
-    window, workspace, WorkspaceSymbolProvider
+    window,
+    workspace,
+    WorkspaceSymbolProvider
 } from 'vscode';
 import { fileSystemScheme } from './constants';
 import { SourcegraphApi } from './sourcegraphApi';
 
-export class RemoteLanguageProvider extends Disposable implements DefinitionProvider, DocumentSymbolProvider, HoverProvider, ReferenceProvider, WorkspaceSymbolProvider {
-
+export class RemoteLanguageProvider extends Disposable
+    implements
+        DefinitionProvider,
+        DocumentSymbolProvider,
+        HoverProvider,
+        ReferenceProvider,
+        WorkspaceSymbolProvider {
     private readonly _disposable: Disposable;
 
-    constructor(
-        private _sourcegraph: SourcegraphApi
-    ) {
+    constructor(private _sourcegraph: SourcegraphApi) {
         super(() => this.dispose());
 
         this._disposable = Disposable.from(
-            languages.registerDefinitionProvider({ scheme: fileSystemScheme, language: '*' }, this),
-            languages.registerDocumentSymbolProvider({ scheme: fileSystemScheme, language: '*' }, this),
-            languages.registerHoverProvider({ scheme: fileSystemScheme, language: '*' }, this),
-            languages.registerReferenceProvider({ scheme: fileSystemScheme, language: '*' }, this),
+            languages.registerDefinitionProvider(
+                { scheme: fileSystemScheme, language: '*' },
+                this
+            ),
+            languages.registerDocumentSymbolProvider(
+                { scheme: fileSystemScheme, language: '*' },
+                this
+            ),
+            languages.registerHoverProvider(
+                { scheme: fileSystemScheme, language: '*' },
+                this
+            ),
+            languages.registerReferenceProvider(
+                { scheme: fileSystemScheme, language: '*' },
+                this
+            ),
             languages.registerWorkspaceSymbolProvider(this)
             // configuration.onDidChange(this.onConfigurationChanged, this)
         );
@@ -37,33 +61,57 @@ export class RemoteLanguageProvider extends Disposable implements DefinitionProv
         this._disposable && this._disposable.dispose();
     }
 
-    provideDefinition(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Definition> {
+    provideDefinition(
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken
+    ): ProviderResult<Definition> {
         return this._sourcegraph.definition(document, position, token);
     }
 
-    provideDocumentSymbols(document: TextDocument, token: CancellationToken): ProviderResult<SymbolInformation[]> {
+    provideDocumentSymbols(
+        document: TextDocument,
+        token: CancellationToken
+    ): ProviderResult<SymbolInformation[]> {
         return this._sourcegraph.documentSymbols(document, token);
     }
 
-    provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
+    provideHover(
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken
+    ): ProviderResult<Hover> {
         return this._sourcegraph.hover(document, position, token);
     }
 
-    provideReferences(document: TextDocument, position: Position, context: ReferenceContext, token: CancellationToken): ProviderResult<Location[]> {
+    provideReferences(
+        document: TextDocument,
+        position: Position,
+        context: ReferenceContext,
+        token: CancellationToken
+    ): ProviderResult<Location[]> {
         return this._sourcegraph.references(document, position, context, token);
     }
 
-    provideWorkspaceSymbols(query: string, token: CancellationToken): ProviderResult<SymbolInformation[]> {
+    provideWorkspaceSymbols(
+        query: string,
+        token: CancellationToken
+    ): ProviderResult<SymbolInformation[]> {
         const editor = window.activeTextEditor;
 
         let uri;
-        if (editor === undefined || editor.document.uri.scheme !== fileSystemScheme) {
-            uri = workspace.workspaceFolders && workspace.workspaceFolders[0].uri;
-        }
-        else {
+        if (
+            editor === undefined ||
+            editor.document.uri.scheme !== fileSystemScheme
+        ) {
+            uri =
+                workspace.workspaceFolders && workspace.workspaceFolders[0].uri;
+        } else {
             uri = editor.document.uri;
         }
-        if (uri === undefined || uri.scheme !== fileSystemScheme) return undefined;
+        if (uri === undefined || uri.scheme !== fileSystemScheme) {
+            return undefined;
+        }
 
         return this._sourcegraph.workspaceSymbols(query, uri, token);
     }
