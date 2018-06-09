@@ -2,12 +2,12 @@
 export * from './config';
 
 import { ConfigurationChangeEvent, ConfigurationTarget, Event, EventEmitter, ExtensionContext, Uri, workspace } from 'vscode';
-import { IConfig } from './config';
+import { Config } from './config';
 // import { Container } from './container';
 import { extensionId } from './constants';
 import { Functions } from './system';
 
-const emptyConfig: any = new Proxy<any>({} as IConfig, {
+const emptyConfig: any = new Proxy<any>({} as Config, {
     get(target, propKey, receiver) {
         return emptyConfig;
     }
@@ -148,8 +148,8 @@ export class Configuration {
         }
     }
 
-    name<K extends keyof IConfig>(name: K) {
-        return Functions.propOf(emptyConfig as IConfig, name);
+    name<K extends keyof Config>(name: K) {
+        return Functions.propOf(emptyConfig as Config, name);
     }
 
     update(section: string, value: any, target: ConfigurationTarget, resource?: Uri | null) {

@@ -1,6 +1,6 @@
 'use strict';
 import { CancellationTokenSource, commands, ConfigurationTarget, Disposable, QuickPickItem, Uri, window, workspace } from 'vscode';
-import { configuration, IConfig } from './configuration';
+import { Config, configuration } from './configuration';
 import { fileSystemScheme } from './constants';
 import { GitHubApi, Repository } from './gitHubApi';
 import { Command, createCommandDecorator } from './system';
@@ -76,7 +76,7 @@ export class Commands extends Disposable {
     }
 
     async ensureTokens() {
-        const cfg = configuration.get<IConfig>();
+        const cfg = configuration.get<Config>();
         if (!cfg.githubToken) {
             const token = await window.showInputBox({
                 placeHolder: 'Generate a personal access token from github.com',

@@ -1,6 +1,6 @@
 'use strict';
 import { ConfigurationChangeEvent, Disposable, Uri, workspace, WorkspaceFolder } from 'vscode';
-import { configuration, IConfig } from './configuration';
+import { Config, configuration } from './configuration';
 import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
 import { Variables } from 'graphql-request/dist/src/types';
@@ -38,7 +38,7 @@ export class GitHubApi extends Disposable {
     private _client: GraphQLClient | undefined;
     private get client(): GraphQLClient {
         if (this._client === undefined) {
-            const cfg = configuration.get<IConfig>();
+            const cfg = configuration.get<Config>();
             if (!cfg.githubToken) throw new Error('No GitHub personal access token could be found');
 
             this._client = new GraphQLClient('https://api.github.com/graphql', {

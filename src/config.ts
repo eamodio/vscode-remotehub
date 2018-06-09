@@ -7,7 +7,7 @@ export enum TraceLevel {
     Debug = 'debug'
 }
 
-export interface IConfig {
+export interface Config {
     githubToken: string;
     traceLevel: TraceLevel;
 }
