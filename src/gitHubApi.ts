@@ -13,14 +13,12 @@ import { Variables } from 'graphql-request/dist/src/types';
 
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
 
-export class GitHubApi extends Disposable {
+export class GitHubApi implements Disposable {
     private readonly _disposable: Disposable;
     private readonly _latestCommitMap = new Map<WorkspaceFolder, string>();
     private readonly _latestCommitForUriMap = new Map<string, string>();
 
     constructor() {
-        super(() => this.dispose());
-
         this._disposable = Disposable.from(
             configuration.onDidChange(this.onConfigurationChanged, this)
         );

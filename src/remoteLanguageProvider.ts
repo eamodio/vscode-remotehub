@@ -22,9 +22,10 @@ import {
 import { fileSystemScheme } from './constants';
 import { SourcegraphApi } from './sourcegraphApi';
 
-export class RemoteLanguageProvider extends Disposable
+export class RemoteLanguageProvider 
     implements
         DefinitionProvider,
+        Disposable,
         DocumentSymbolProvider,
         HoverProvider,
         ReferenceProvider,
@@ -32,7 +33,6 @@ export class RemoteLanguageProvider extends Disposable
     private readonly _disposable: Disposable;
 
     constructor(private _sourcegraph: SourcegraphApi) {
-        super(() => this.dispose());
 
         this._disposable = Disposable.from(
             languages.registerDefinitionProvider(

@@ -17,12 +17,10 @@ import { Command, createCommandDecorator } from './system';
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
 
-export class Commands extends Disposable {
+export class Commands implements Disposable {
     private readonly _disposable: Disposable;
 
     constructor(private readonly _github: GitHubApi) {
-        super(() => this.dispose);
-
         this._disposable = Disposable.from(
             ...commandRegistry.map(({ name, key, method }) =>
                 commands.registerCommand(name, (...args: any[]) =>
