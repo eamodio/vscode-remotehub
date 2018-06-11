@@ -2,7 +2,7 @@
     "name": "remotehub",
     "displayName": "RemoteHub",
     "description": "RemoteHub is a proof-of-concept extension that allows for opening a remote GitHub repository as a workspace",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "author": {
         "name": "Eric Amodio",
         "email": "eamodio@gmail.com"
