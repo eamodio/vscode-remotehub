@@ -99,22 +99,24 @@ export class GitHubApi extends Disposable {
     async fsQuery<T>(uri: Uri, innerQuery: string): Promise<T | undefined> {
         try {
             const query = `query fs($owner: String!, $repo: String!, $path: String) {
-                repository(owner: $owner, name: $repo) {
-                    object(expression: $path) {
-                        ${innerQuery}
-                    }
-                }
-            }`;
+    repository(owner: $owner, name: $repo) {
+        object(expression: $path) {
+            ${innerQuery}
+        }
+    }
+}`;
 
             const variables = GitHubApi.extractFSQueryVariables(uri);
-            Logger.log(query, JSON.stringify(variables));
+            Logger.log(
+                `GitHub.fsQuery\n\t${query}\n\t${JSON.stringify(variables)}`
+            );
 
             const rsp = await this.client.request<{
                 repository: { object: T };
             }>(query, variables);
             return rsp.repository.object;
         } catch (ex) {
-            Logger.error(ex);
+            Logger.error(ex, 'GitHub.fsQuery');
             return undefined;
         }
     }
@@ -125,17 +127,21 @@ export class GitHubApi extends Disposable {
     ): Promise<string | undefined> {
         try {
             const query = `query repo($owner: String!, $repo: String!) {
-                repository(owner: $owner, name: $repo) {
-                    defaultBranchRef {
-                        target {
-                            oid
-                        }
-                    }
-                }
-            }`;
+    repository(owner: $owner, name: $repo) {
+        defaultBranchRef {
+            target {
+                oid
+            }
+        }
+    }
+}`;
 
             const variables = { owner: owner, repo: repo };
-            Logger.log(query, JSON.stringify(variables));
+            Logger.log(
+                `GitHub.repositoryRevisionQuery\n\t${query}\n\t${JSON.stringify(
+                    variables
+                )}`
+            );
 
             const rsp = await this.client.request<{
                 repository: { defaultBranchRef: { target: { oid: string } } };
@@ -144,7 +150,7 @@ export class GitHubApi extends Disposable {
 
             return rsp.repository.defaultBranchRef.target.oid;
         } catch (ex) {
-            Logger.error(ex);
+            Logger.error(ex, 'GitHub.repositoryRevisionQuery');
             return undefined;
         }
     }
@@ -169,22 +175,26 @@ export class GitHubApi extends Disposable {
 
         try {
             const query = `query repos($query: String!) {
-                search(type: REPOSITORY, query: $query, first: 25 ) {
-                    edges {
-                        node {
-                            ... on Repository {
-                                name,
-                                description,
-                                url,
-                                nameWithOwner
-                            }
-                        }
-                    }
+    search(type: REPOSITORY, query: $query, first: 25 ) {
+        edges {
+            node {
+                ... on Repository {
+                    name
+                    description
+                    url
+                    nameWithOwner
                 }
-            }`;
+            }
+        }
+    }
+}`;
 
             const variables = { query: searchQuery };
-            Logger.log(query, JSON.stringify(variables));
+            Logger.log(
+                `GitHub.repositoriesQuery\n\t${query}\n\t${JSON.stringify(
+                    variables
+                )}`
+            );
 
             const rsp = await this.client.request<{
                 search: { edges: { node: Repository }[] };
@@ -193,7 +203,7 @@ export class GitHubApi extends Disposable {
 
             return rsp.search.edges.map(e => e.node);
         } catch (ex) {
-            Logger.error(ex);
+            Logger.error(ex, 'GitHub.repositoriesQuery');
             return [];
         }
     }

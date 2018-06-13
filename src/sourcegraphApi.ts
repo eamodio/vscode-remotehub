@@ -257,14 +257,14 @@ export class SourcegraphApi extends Disposable {
             }
         ];
 
+        const url = `https://sourcegraph.com/.api/xlang/${method}`;
+        Logger.log(`Sourcegraph.lsp(${url})\n\t${JSON.stringify(body)}`);
+
         try {
-            const resp = await fetch(
-                `https://sourcegraph.com/.api/xlang/${method}`,
-                {
-                    method: 'POST',
-                    body: JSON.stringify(body)
-                }
-            );
+            const resp = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
 
             const json = (await resp.json()) as [
                 LspResponse<{ capabilities: LspCapabilities }>,
@@ -273,11 +273,17 @@ export class SourcegraphApi extends Disposable {
             const [lspInitResp, lspMethodResp] = json;
             if (lspInitResp.error || lspMethodResp.error) {
                 if (lspInitResp.error) {
-                    Logger.warn(`lsp:initialize: ${lspInitResp.error.message}`);
+                    Logger.warn(
+                        `Sourcegraph.lsp(${url}):initialize: ${
+                            lspInitResp.error.message
+                        }`
+                    );
                 }
                 if (lspMethodResp.error) {
                     Logger.warn(
-                        `lsp:${method}: ${lspMethodResp.error.message}`
+                        `Sourcegraph.lsp(${url}):${method}: ${
+                            lspMethodResp.error.message
+                        }`
                     );
                 }
 
@@ -298,7 +304,7 @@ export class SourcegraphApi extends Disposable {
 
             return lspMethodResp.result;
         } catch (ex) {
-            Logger.error(ex);
+            Logger.error(ex, 'Sourcegraph.lsp');
             return undefined;
         }
     }
