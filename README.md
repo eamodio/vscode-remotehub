@@ -30,3 +30,11 @@ Copy the generated access token to your clipboard and paste it into the input bo
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | `remotehub.githubToken` | Specifies the GitHub personal access token to use for authentication with the GitHub GraphQL API |
 | `remotehub.traceLevel`  | Specifies how much (if any) output will be sent to the RemoteHub output channel                  |
+
+## Contributors 🙏&#x2764;
+
+A big thanks to the people that have contributed to this project:
+
+- Per Persson ([@md2perpe](https://github.com/md2perpe)) &mdash; [contributions](https://github.com/eamodio/vscode-remotehub/commits?author=md2perpe)
+
+And of course the awesome [vscode](https://github.com/Microsoft/vscode/graphs/contributors) and [sourcegraph](https://github.com/orgs/sourcegraph/people) teams!
