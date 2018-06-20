@@ -17,7 +17,7 @@ export class Logger {
     static level: TraceLevel = TraceLevel.Silent;
     static output: OutputChannel | undefined;
 
-    static configure(context: ExtensionContext) {
+    static initialize(context: ExtensionContext) {
         context.subscriptions.push(
             configuration.onDidChange(this.onConfigurationChanged, this)
         );
