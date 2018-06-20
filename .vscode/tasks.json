@@ -3,53 +3,39 @@
 {
     "version": "2.0.0",
     "presentation": {
-        "echo": true,
+        "echo": false,
         "reveal": "always",
         "focus": false,
-        "panel": "shared"
+        "panel": "dedicated"
     },
     "tasks": [
         {
-            "label": "build",
             "type": "npm",
             "script": "build",
-            "problemMatcher": [
-                "$tsc",
-                "$tslint5"
-            ],
-            "group": "build"
+            "group": "build",
+            "problemMatcher": ["$tsc", "$tslint5"]
         },
         {
-            "label": "lint",
             "type": "npm",
             "script": "lint",
-            "problemMatcher": [
-                "$tslint5"
-            ],
-            "group": "build"
+            "group": "build",
+            "problemMatcher": ["$tslint5"]
         },
         {
-            "label": "rebuild",
             "type": "npm",
             "script": "rebuild",
-            "problemMatcher": [
-                "$tsc",
-                "$tslint5"
-            ],
-            "group": "build"
+            "group": "build",
+            "problemMatcher": ["$tsc", "$tslint5"]
         },
         {
-            "label": "watch",
             "type": "npm",
             "script": "watch",
-            "isBackground": true,
-            "problemMatcher": [
-                "$tsc-watch"
-            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+            "isBackground": true,
+            "problemMatcher": ["$tsc-watch"]
         }
     ]
 }
