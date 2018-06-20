@@ -1,6 +1,6 @@
 # RemoteHub
 
-RemoteHub is a **proof-of-concept** extension that allows for opening a remote GitHub repository as a workspace. Experimental language services (Go to definition, hovers, references, etc) are provided by [Sourcegraph](https://sourcegraph.com) and will only work on public repositories that are enabled and supported by them.
+RemoteHub is a **proof-of-concept** extension that allows for opening a remote [GitHub](https://github.com) repository as a workspace. Experimental language services (Go to definition, hovers, references, etc) are provided by [Sourcegraph](https://sourcegraph.com) and will only work on public repositories that are enabled and supported by them.
 
 NOTE: This extension is in the **very** early stages and is likely to have lots of bugs and only work in certain cases, so please keep that in mind. Also _please_ file GitHub issues for any questions, features, or issues. Thanks!
 
@@ -18,7 +18,7 @@ NOTE: This extension is in the **very** early stages and is likely to have lots 
 
 > If you already have a token saved in the `github.accessToken` setting, you can skip this section as RemoteHub can use that token
 
-RemoteHub requires a personal access token to authenticate to GitHub’s GraphQL API. [Follow the steps](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) in the GitHub guide, enabling the following scopes:
+RemoteHub requires a personal access token to authenticate to [GitHub](https://github.com)’s GraphQL API. [Follow the steps](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) in the GitHub guide, enabling the following scopes:
 
 ![Generate Token](https://raw.githubusercontent.com/eamodio/vscode-remotehub/master/images/generate-token.png)
 
