@@ -1,7 +1,6 @@
 'use strict';
 import { ExtensionContext } from 'vscode';
 import { Commands } from './commands';
-import { Config, configuration } from './configuration';
 import { GitHubApi } from './gitHubApi';
 import { GitHubFileSystemProvider } from './gitHubFileSystemProvider';
 import { Logger } from './logger';
@@ -14,8 +13,7 @@ export async function activate(context: ExtensionContext) {
     const github = new GitHubApi();
     const commands = new Commands(github);
 
-    const cfg = configuration.get<Config>();
-    if (!cfg.githubToken) {
+    if (!github.token) {
         await commands.ensureTokens();
     }
 

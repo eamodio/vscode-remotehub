@@ -6,7 +6,7 @@ import {
     workspace,
     WorkspaceFolder
 } from 'vscode';
-import { Config, configuration } from './configuration';
+import { configuration } from './configuration';
 import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
 import { Variables } from 'graphql-request/dist/src/types';
@@ -40,11 +40,24 @@ export class GitHubApi implements Disposable {
         }
     }
 
+    private _token: string | undefined;
+    get token() {
+        if (this._token === undefined) {
+            this._token =
+                workspace
+                    .getConfiguration('github')
+                    .get<string>('accessToken') ||
+                configuration.get<string>(
+                    configuration.name('githubToken').value
+                );
+        }
+        return this._token;
+    }
+
     private _client: GraphQLClient | undefined;
     private get client(): GraphQLClient {
         if (this._client === undefined) {
-            const cfg = configuration.get<Config>();
-            if (!cfg.githubToken) {
+            if (!this.token) {
                 throw new Error(
                     'No GitHub personal access token could be found'
                 );
@@ -52,7 +65,7 @@ export class GitHubApi implements Disposable {
 
             this._client = new GraphQLClient('https://api.github.com/graphql', {
                 headers: {
-                    Authorization: `Bearer ${cfg.githubToken}`
+                    Authorization: `Bearer ${this.token}`
                 }
             });
         }

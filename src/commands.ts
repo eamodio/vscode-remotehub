@@ -9,7 +9,7 @@ import {
     window,
     workspace
 } from 'vscode';
-import { Config, configuration } from './configuration';
+import { configuration } from './configuration';
 import { fileSystemScheme } from './constants';
 import { GitHubApi, Repository } from './gitHubApi';
 import { Command, createCommandDecorator } from './system';
@@ -94,8 +94,7 @@ export class Commands implements Disposable {
     }
 
     async ensureTokens() {
-        const cfg = configuration.get<Config>();
-        if (!cfg.githubToken) {
+        if (!this._github.token) {
             const token = await window.showInputBox({
                 placeHolder: 'Generate a personal access token from github.com',
                 prompt: 'Enter a GitHub personal access token',
