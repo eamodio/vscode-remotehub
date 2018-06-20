@@ -22,7 +22,7 @@ export async function activate(context: ExtensionContext) {
         await commands.ensureTokens();
     }
 
-    const sourcegraph = new SourcegraphApi(github);
+    const sourcegraph = new SourcegraphApi();
     context.subscriptions.push(
         workspace.onDidChangeWorkspaceFolders(workspaceFoldersChanged),
         github,

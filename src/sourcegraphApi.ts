@@ -15,23 +15,38 @@ import {
     workspace,
     WorkspaceFolder
 } from 'vscode';
-import { fileSystemScheme } from './constants';
-import { GitHubApi } from './gitHubApi';
+import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
 import fetch from 'node-fetch';
+import { fromRemoteHubUri, toRemoteHubUri, toSourcegraphUri } from './uris';
 
 const hoverTypeRegex = /\*\*(.*)?\*\*(?: \_\((.*)\)\_)?/;
 
+interface WorkspaceFolderMetadata {
+    capabilities: LspCapabilities;
+    repo: { languageId: string; revision: string };
+}
+
 export class SourcegraphApi implements Disposable {
-    private readonly _capabilitiesMap = new Map<
+    private readonly _disposable: Disposable | undefined;
+    private readonly _metadataMap = new Map<
         WorkspaceFolder,
-        LspCapabilities
+        WorkspaceFolderMetadata
     >();
 
-    constructor(public readonly _github: GitHubApi) {
+    dispose() {
+        this._disposable && this._disposable.dispose();
     }
 
-    dispose() {}
+    private _client: GraphQLClient | undefined;
+    get client(): GraphQLClient {
+        if (this._client === undefined) {
+            this._client = new GraphQLClient(
+                'https://sourcegraph.com/.api/graphql'
+            );
+        }
+        return this._client;
+    }
 
     async definition(
         document: TextDocument,
@@ -57,7 +72,7 @@ export class SourcegraphApi implements Disposable {
         const definition = result.map(
             d =>
                 new Location(
-                    SourcegraphApi.toRemoteHubUri(Uri.parse(d.uri)),
+                    toRemoteHubUri(Uri.parse(d.uri)),
                     SourcegraphApi.toRange(d.range)
                 )
         );
@@ -86,9 +101,7 @@ export class SourcegraphApi implements Disposable {
                     containerName: s.containerName,
                     kind: s.kind,
                     location: new Location(
-                        SourcegraphApi.toRemoteHubUri(
-                            Uri.parse(s.location.uri)
-                        ),
+                        toRemoteHubUri(Uri.parse(s.location.uri)),
                         SourcegraphApi.toRange(s.location.range)
                     )
                 } as SymbolInformation)
@@ -139,6 +152,49 @@ export class SourcegraphApi implements Disposable {
         return hover;
     }
 
+    async filesQuery(uri: Uri) {
+        try {
+            const query = `query files($repo: String!) {
+                repository(name: $repo) {
+                    commit(rev: "HEAD") {
+                        tree(path: "", recursive: true) {
+                            entries {
+                                path
+                                isDirectory
+                            }
+                        }
+                    }
+                }
+            }`;
+
+            const [owner, repo] = fromRemoteHubUri(uri);
+
+            const variables = {
+                repo: `${uri.authority}/${owner}/${repo}`
+            };
+            Logger.log(query, JSON.stringify(variables));
+
+            const rsp = await this.client.request<{
+                repository: {
+                    commit: {
+                        tree: {
+                            entries: ({
+                                path: string;
+                                isDirectory: boolean;
+                            })[];
+                        };
+                    };
+                };
+            }>(query, variables);
+            return rsp.repository.commit.tree.entries
+                .filter(p => p.isDirectory === false)
+                .map(p => p.path);
+        } catch (ex) {
+            Logger.error(ex);
+            return undefined;
+        }
+    }
+
     async references(
         document: TextDocument,
         position: Position,
@@ -167,16 +223,66 @@ export class SourcegraphApi implements Disposable {
         const locations = result.map(
             d =>
                 new Location(
-                    SourcegraphApi.toRemoteHubUri(Uri.parse(d.uri)),
+                    toRemoteHubUri(Uri.parse(d.uri)),
                     SourcegraphApi.toRange(d.range)
                 )
         );
         return locations;
     }
 
+    async searchQuery(query: string, uri: Uri, token: CancellationToken) {
+        try {
+            const graphQuery = `query search($query: String!) {
+                search(query: $query) {
+                    results {
+                        resultCount
+                        results {
+                            ... on FileMatch {
+                                resource
+                                lineMatches {
+                                    lineNumber,
+                                    offsetAndLengths
+                                    preview
+                                }
+                            }
+                        }
+                    }
+                }
+            }`;
+
+            const [owner, repo] = fromRemoteHubUri(uri);
+
+            const variables = {
+                query: `repo:^${uri.authority}/${owner}/${repo}$ ${query}`
+            };
+            Logger.log(query, JSON.stringify(variables));
+
+            const rsp = await this.client.request<{
+                search: {
+                    results: {
+                        resultCount: number;
+                        results: {
+                            resource: string;
+                            lineMatches: {
+                                lineNumber: number;
+                                offsetAndLengths: [number, number][];
+                                preview: string;
+                            }[];
+                        }[];
+                    };
+                };
+            }>(graphQuery, variables);
+            return rsp.search.results.results.filter(m => m.resource);
+        } catch (ex) {
+            Logger.error(ex);
+            return undefined;
+        }
+    }
+
     async workspaceSymbols(
         query: string,
         uri: Uri,
+        languageId: string | undefined,
         token: CancellationToken
     ): Promise<SymbolInformation[] | undefined> {
         const params = {
@@ -187,7 +293,7 @@ export class SourcegraphApi implements Disposable {
             'workspace/symbol',
             params,
             uri,
-            'typescript',
+            languageId,
             token
         );
         if (!result) return undefined;
@@ -199,9 +305,7 @@ export class SourcegraphApi implements Disposable {
                     containerName: s.containerName,
                     kind: s.kind,
                     location: new Location(
-                        SourcegraphApi.toRemoteHubUri(
-                            Uri.parse(s.location.uri)
-                        ),
+                        toRemoteHubUri(Uri.parse(s.location.uri)),
                         SourcegraphApi.toRange(s.location.range)
                     )
                 } as SymbolInformation)
@@ -213,11 +317,17 @@ export class SourcegraphApi implements Disposable {
         method: string,
         params: { [key: string]: any },
         uri: Uri,
-        languageId: string,
+        languageId: string | undefined,
         token: CancellationToken
     ): Promise<T | undefined> {
         const folder = workspace.getWorkspaceFolder(uri);
-        const capabilities = folder && this._capabilitiesMap.get(folder);
+        const metadata =
+            (folder && this._metadataMap.get(folder)) ||
+            ({
+                repo: {}
+            } as WorkspaceFolderMetadata);
+
+        const capabilities = metadata.capabilities;
         if (
             capabilities &&
             !SourcegraphApi.ensureCapability(capabilities, method)
@@ -225,10 +335,28 @@ export class SourcegraphApi implements Disposable {
             return undefined;
         }
 
-        const sgUri = SourcegraphApi.toSourcegraphUri(
-            uri,
-            (await this._github.getSourcegraphRevisionForUri(uri))!
-        );
+        if (
+            metadata.repo.languageId === undefined ||
+            metadata.repo.revision === undefined
+        ) {
+            const [owner, name] = fromRemoteHubUri(uri);
+            const repo = await this.repositoryQuery(owner, name);
+            if (repo) {
+                metadata.repo.languageId = repo.languageId;
+                metadata.repo.revision = repo.revision;
+
+                if (folder) {
+                    this._metadataMap.set(folder, metadata);
+                }
+            }
+        }
+
+        if (languageId === undefined) {
+            languageId = metadata.repo.languageId;
+        }
+        if (languageId === undefined) return undefined;
+
+        const sgUri = toSourcegraphUri(uri, metadata.repo.revision);
         if (method.startsWith('textDocument/')) {
             params.textDocument = { uri: sgUri.toString(true) };
         }
@@ -269,6 +397,7 @@ export class SourcegraphApi implements Disposable {
                 LspResponse<{ capabilities: LspCapabilities }>,
                 LspResponse<T>
             ];
+
             const [lspInitResp, lspMethodResp] = json;
             if (lspInitResp.error || lspMethodResp.error) {
                 if (lspInitResp.error) {
@@ -294,7 +423,8 @@ export class SourcegraphApi implements Disposable {
             } = lspInitResp;
 
             if (caps && folder && !capabilities) {
-                this._capabilitiesMap.set(folder, caps);
+                metadata.capabilities = caps;
+                this._metadataMap.set(folder, metadata);
 
                 if (!SourcegraphApi.ensureCapability(caps, method)) {
                     return undefined;
@@ -308,6 +438,41 @@ export class SourcegraphApi implements Disposable {
         }
     }
 
+    async repositoryQuery(
+        owner: string,
+        repo: string
+    ): Promise<{ languageId: string; revision: string } | undefined> {
+        try {
+            const query = `query getRepo($name: String!) {
+    repository(name: $name) {
+        language,
+        lastIndexedRevOrLatest {
+            oid
+        }
+    }
+}`;
+
+            const variables = { name: `github.com/${owner}/${repo}` };
+            Logger.log(query, JSON.stringify(variables));
+
+            const rsp = await this.client.request<{
+                repository: {
+                    language: string;
+                    lastIndexedRevOrLatest: { oid: string };
+                };
+            }>(query, variables);
+            if (rsp.repository == null) return undefined;
+
+            return {
+                languageId: rsp.repository.language.toLocaleLowerCase(),
+                revision: rsp.repository.lastIndexedRevOrLatest.oid
+            };
+        } catch (ex) {
+            Logger.error(ex);
+            return undefined;
+        }
+    }
+
     private static toRange(range: Range): Range {
         return new Range(
             range.start.line,
@@ -315,28 +480,6 @@ export class SourcegraphApi implements Disposable {
             range.end.line,
             range.end.character
         );
-    }
-
-    private static toRemoteHubUri(uri: Uri): Uri {
-        const [, owner, repo] = uri.path.split('/');
-
-        // e.g. remotehub://github.com/eamodio/vscode-gitlens/src/extension.ts
-        return uri.with({
-            scheme: fileSystemScheme,
-            path: `/${owner}/${repo}/${uri.fragment}`
-        });
-    }
-
-    private static toSourcegraphUri(uri: Uri, rev: string): Uri {
-        const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
-
-        // e.g. git://github.com/eamodio/vscode-gitlens?<rev>#src/extension.ts
-        return uri.with({
-            scheme: 'git',
-            path: `/${owner}/${repo}`,
-            query: rev,
-            fragment: path
-        });
     }
 
     private static ensureCapability(

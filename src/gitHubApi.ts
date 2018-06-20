@@ -1,22 +1,16 @@
 'use strict';
-import {
-    ConfigurationChangeEvent,
-    Disposable,
-    Uri,
-    workspace,
-    WorkspaceFolder
-} from 'vscode';
+import { ConfigurationChangeEvent, Disposable, Uri, workspace } from 'vscode';
 import { configuration } from './configuration';
 import { GraphQLClient } from 'graphql-request';
-import { Logger } from './logger';
 import { Variables } from 'graphql-request/dist/src/types';
+import { Logger } from './logger';
+import { fromRemoteHubUri } from './uris';
 
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
 
 export class GitHubApi implements Disposable {
     private readonly _disposable: Disposable;
-    private readonly _latestCommitMap = new Map<WorkspaceFolder, string>();
-    private readonly _latestCommitForUriMap = new Map<string, string>();
+    private readonly _revisionForUriMap = new Map<string, string>();
 
     constructor() {
         this._disposable = Disposable.from(
@@ -72,39 +66,12 @@ export class GitHubApi implements Disposable {
         return this._client;
     }
 
-    getLatestRevisionForUri(uri: Uri) {
-        return this._latestCommitForUriMap.get(uri.toString());
+    getRevisionForUri(uri: Uri) {
+        return this._revisionForUriMap.get(uri.toString());
     }
 
-    getLatestRevisionCommitForUri(uri: Uri) {
-        const folder = workspace.getWorkspaceFolder(uri);
-        return this._latestCommitMap.get(folder!);
-    }
-
-    async getSourcegraphRevisionForUri(uri: Uri) {
-        const rev = this.getLatestRevisionCommitForUri(uri);
-        if (rev !== undefined) return rev;
-
-        return this.trackRepoForUri(uri);
-    }
-
-    async trackRepoForUri(uri: Uri, fileRevision?: string) {
-        if (fileRevision) {
-            this._latestCommitForUriMap.set(uri.toString(), fileRevision);
-        }
-
-        const folder = workspace.getWorkspaceFolder(uri);
-        if (!folder || this._latestCommitMap.has(folder)) return;
-
-        const [owner, repo] = GitHubApi.extractRepoInfo(uri);
-
-        // Get latest repo revision
-        const rev = await this.repositoryRevisionQuery(owner, repo);
-        if (rev) {
-            this._latestCommitMap.set(folder, rev);
-        }
-
-        return rev;
+    setRevisionForUri(uri: Uri, fileRevision: string) {
+        this._revisionForUriMap.set(uri.toString(), fileRevision);
     }
 
     async fsQuery<T>(uri: Uri, innerQuery: string): Promise<T | undefined> {
@@ -219,14 +186,8 @@ export class GitHubApi implements Disposable {
         }
     }
 
-    static extractRepoInfo(uri: Uri): [string, string, string | undefined] {
-        const [, owner, repo, ...rest] = uri.path.split('/');
-
-        return [owner, repo, rest.join('/')];
-    }
-
     private static extractFSQueryVariables(uri: Uri): Variables {
-        const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
+        const [owner, repo, path] = fromRemoteHubUri(uri);
 
         return {
             owner: owner,

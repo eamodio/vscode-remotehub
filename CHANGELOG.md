@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Adds a `Clone GitHub Repository...` command (`remotehub.cloneRepository`) which allows you to search for a remote GitHub repository to clone
 - Adds a `Clone Opened GitHub Repository...` command (`remotehub.cloneOpenedRepository`) which allows you to clone an opened remote GitHub repository
 
+### Fixes
+
+- Fixes issues with symbol search and intermittent failures with hovers and other language features
+
 ## [0.1.3] - 2018-06-11
 
 ### Added

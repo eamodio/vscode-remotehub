@@ -16,6 +16,7 @@ import { GitHubApi } from './gitHubApi';
 import { fileSystemScheme } from './constants';
 import { Strings } from './system';
 import fetch from 'node-fetch';
+import { fromRemoteHubUri } from './uris';
 
 export class GitHubFileSystemProvider
     implements FileSystemProvider, Disposable {
@@ -116,12 +117,12 @@ export class GitHubFileSystemProvider
         );
 
         if (data) {
-            this._github.trackRepoForUri(uri, data.oid);
+            this._github.setRevisionForUri(uri, data.oid);
         }
 
         let buffer;
         if (data && data.isBinary) {
-            const [owner, repo, path] = GitHubApi.extractRepoInfo(uri);
+            const [owner, repo, path] = fromRemoteHubUri(uri);
             // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
             const downloadUri = uri.with({
                 scheme: 'https',

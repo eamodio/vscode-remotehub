@@ -22,7 +22,7 @@ import {
 import { fileSystemScheme } from './constants';
 import { SourcegraphApi } from './sourcegraphApi';
 
-export class RemoteLanguageProvider 
+export class RemoteLanguageProvider
     implements
         DefinitionProvider,
         Disposable,
@@ -33,7 +33,6 @@ export class RemoteLanguageProvider
     private readonly _disposable: Disposable;
 
     constructor(private _sourcegraph: SourcegraphApi) {
-
         this._disposable = Disposable.from(
             languages.registerDefinitionProvider(
                 { scheme: fileSystemScheme, language: '*' },
@@ -99,6 +98,7 @@ export class RemoteLanguageProvider
     ): ProviderResult<SymbolInformation[]> {
         const editor = window.activeTextEditor;
 
+        let languageId;
         let uri;
         if (
             editor === undefined ||
@@ -108,11 +108,17 @@ export class RemoteLanguageProvider
                 workspace.workspaceFolders && workspace.workspaceFolders[0].uri;
         } else {
             uri = editor.document.uri;
+            languageId = editor.document.languageId;
         }
         if (uri === undefined || uri.scheme !== fileSystemScheme) {
             return undefined;
         }
 
-        return this._sourcegraph.workspaceSymbols(query, uri, token);
+        return this._sourcegraph.workspaceSymbols(
+            query,
+            uri,
+            languageId,
+            token
+        );
     }
 }

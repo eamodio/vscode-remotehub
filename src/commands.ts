@@ -13,6 +13,7 @@ import { configuration } from './configuration';
 import { fileSystemScheme } from './constants';
 import { GitHubApi, Repository } from './gitHubApi';
 import { Command, createCommandDecorator } from './system';
+import { fromRemoteHubUri } from './uris';
 
 const commandRegistry: Command[] = [];
 const command = createCommandDecorator(commandRegistry);
@@ -96,7 +97,7 @@ export class Commands implements Disposable {
 
         if (!folder) return;
 
-        const [owner, repo] = GitHubApi.extractRepoInfo(folder.uri);
+        const [owner, repo] = fromRemoteHubUri(folder.uri);
         const url = `https://${folder.uri.authority}/${owner}/${repo}.git`;
         commands.executeCommand('git.clone', url);
     }
@@ -122,7 +123,8 @@ export class Commands implements Disposable {
     async ensureTokens() {
         if (!this._github.token) {
             const token = await window.showInputBox({
-                placeHolder: 'Generate a personal access token from github.com',
+                placeHolder:
+                    'Generate a personal access token from github.com (required)',
                 prompt: 'Enter a GitHub personal access token',
                 validateInput: (value: string) =>
                     value
