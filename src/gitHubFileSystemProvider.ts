@@ -17,14 +17,12 @@ import { fileSystemScheme } from './constants';
 import { Strings } from './system';
 import fetch from 'node-fetch';
 
-export class GitHubFileSystemProvider extends Disposable
-    implements FileSystemProvider {
+export class GitHubFileSystemProvider
+    implements FileSystemProvider, Disposable {
     private readonly _disposable: Disposable;
     private _fsCache = new Map<string, any>();
 
     constructor(private readonly _github: GitHubApi) {
-        super(() => this.dispose());
-
         this._disposable = Disposable.from(
             workspace.registerFileSystemProvider(fileSystemScheme, this, {
                 isCaseSensitive: true
