@@ -22,10 +22,7 @@ export namespace Strings {
             tokens.push({
                 key: match[1],
                 options: {
-                    truncateTo:
-                        truncateTo == null
-                            ? undefined
-                            : parseInt(truncateTo, 10),
+                    truncateTo: truncateTo == null ? undefined : parseInt(truncateTo, 10),
                     padDirection: option === '-' ? 'left' : 'right',
                     collapseWhitespace: option === '?'
                 }
@@ -36,10 +33,7 @@ export namespace Strings {
         return tokens;
     }
 
-    export function interpolate(
-        template: string,
-        context: object | undefined
-    ): string {
+    export function interpolate(template: string, context: object | undefined): string {
         if (!template) return template;
         if (context === undefined) {
             return template.replace(TokenSanitizeRegex, '');
@@ -62,10 +56,7 @@ export namespace Strings {
         }
     }
 
-    export function md5(
-        s: string,
-        encoding: HexBase64Latin1Encoding = 'base64'
-    ): string {
+    export function md5(s: string, encoding: HexBase64Latin1Encoding = 'base64'): string {
         return createHash('md5')
             .update(s)
             .digest(encoding);
@@ -79,44 +70,25 @@ export namespace Strings {
         return normalized;
     }
 
-    export function pad(
-        s: string,
-        before: number = 0,
-        after: number = 0,
-        padding: string = `\u00a0`
-    ) {
+    export function pad(s: string, before: number = 0, after: number = 0, padding: string = `\u00a0`) {
         if (before === 0 && after === 0) return s;
 
-        return `${before === 0 ? '' : padding.repeat(before)}${s}${
-            after === 0 ? '' : padding.repeat(after)
-        }`;
+        return `${before === 0 ? '' : padding.repeat(before)}${s}${after === 0 ? '' : padding.repeat(after)}`;
     }
 
-    export function padLeft(
-        s: string,
-        padTo: number,
-        padding: string = '\u00a0'
-    ) {
+    export function padLeft(s: string, padTo: number, padding: string = '\u00a0') {
         const diff = padTo - width(s);
         return diff <= 0 ? s : padding.repeat(diff) + s;
     }
 
-    export function padLeftOrTruncate(
-        s: string,
-        max: number,
-        padding?: string
-    ) {
+    export function padLeftOrTruncate(s: string, max: number, padding?: string) {
         const len = width(s);
         if (len < max) return padLeft(s, max, padding);
         if (len > max) return truncate(s, max);
         return s;
     }
 
-    export function padRight(
-        s: string,
-        padTo: number,
-        padding: string = '\u00a0'
-    ) {
+    export function padRight(s: string, padTo: number, padding: string = '\u00a0') {
         const diff = padTo - width(s);
         return diff <= 0 ? s : s + padding.repeat(diff);
     }
@@ -133,11 +105,7 @@ export namespace Strings {
         return s;
     }
 
-    export function padRightOrTruncate(
-        s: string,
-        max: number,
-        padding?: string
-    ) {
+    export function padRightOrTruncate(s: string, max: number, padding?: string) {
         const len = width(s);
         if (len < max) return padRight(s, max, padding);
         if (len > max) return truncate(s, max);
@@ -147,28 +115,18 @@ export namespace Strings {
     // Removes \ / : * ? " < > | and C0 and C1 control codes
     const illegalCharsForFSRegEx = /[\\/:*?"<>|\x00-\x1f\x80-\x9f]/g;
 
-    export function sanitizeForFileSystem(
-        s: string,
-        replacement: string = '_'
-    ) {
+    export function sanitizeForFileSystem(s: string, replacement: string = '_') {
         if (!s) return s;
         return s.replace(illegalCharsForFSRegEx, replacement);
     }
 
-    export function sha1(
-        s: string,
-        encoding: HexBase64Latin1Encoding = 'base64'
-    ): string {
+    export function sha1(s: string, encoding: HexBase64Latin1Encoding = 'base64'): string {
         return createHash('sha1')
             .update(s)
             .digest(encoding);
     }
 
-    export function truncate(
-        s: string,
-        truncateTo: number,
-        ellipsis: string = '\u2026'
-    ) {
+    export function truncate(s: string, truncateTo: number, ellipsis: string = '\u2026') {
         if (!s) return s;
 
         const len = width(s);

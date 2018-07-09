@@ -1,4 +1,5 @@
 'use strict';
+import fetch from 'node-fetch';
 import {
     Disposable,
     Event,
@@ -12,18 +13,18 @@ import {
     Uri,
     workspace
 } from 'vscode';
-import { GitHubApi } from './gitHubApi';
 import { fileSystemScheme } from './constants';
+import { GitHubApi } from './gitHubApi';
 import { Strings } from './system';
-import fetch from 'node-fetch';
 import { fromRemoteHubUri } from './uris';
 
-export class GitHubFileSystemProvider
-    implements FileSystemProvider, Disposable {
+export class GitHubFileSystemProvider implements FileSystemProvider, Disposable {
     private readonly _disposable: Disposable;
     private _fsCache = new Map<string, any>();
 
-    constructor(private readonly _github: GitHubApi) {
+    constructor(
+        private readonly _github: GitHubApi
+    ) {
         this._disposable = Disposable.from(
             workspace.registerFileSystemProvider(fileSystemScheme, this, {
                 isCaseSensitive: true
@@ -69,9 +70,7 @@ export class GitHubFileSystemProvider
         );
 
         return {
-            type: GitHubFileSystemProvider.typeToFileType(
-                data && data.__typename
-            ),
+            type: GitHubFileSystemProvider.typeToFileType(data && data.__typename),
             size: (data && data.byteSize) || 0,
             ctime: 0,
             mtime: 0
@@ -131,7 +130,8 @@ export class GitHubFileSystemProvider
             });
 
             buffer = await GitHubFileSystemProvider.downloadBinary(downloadUri);
-        } else {
+        }
+        else {
             buffer = Buffer.from((data && data.text) || '');
         }
 
@@ -154,11 +154,7 @@ export class GitHubFileSystemProvider
         throw FileSystemError.NoPermissions;
     }
 
-    private async fsQuery<T>(
-        uri: Uri,
-        query: string,
-        cache?: Map<string, any>
-    ): Promise<T | undefined> {
+    private async fsQuery<T>(uri: Uri, query: string, cache?: Map<string, any>): Promise<T | undefined> {
         if (cache === undefined) {
             return await this._github.fsQuery<T>(uri, query);
         }
@@ -174,11 +170,7 @@ export class GitHubFileSystemProvider
     }
 
     private static bufferToUint8Array(buffer: Buffer): Uint8Array {
-        return new Uint8Array(
-            buffer.buffer,
-            buffer.byteOffset,
-            buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT
-        );
+        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
     }
 
     private static async downloadBinary(uri: Uri) {

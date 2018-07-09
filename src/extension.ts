@@ -1,9 +1,5 @@
 'use strict';
-import {
-    ExtensionContext,
-    workspace,
-    WorkspaceFoldersChangeEvent
-} from 'vscode';
+import { ExtensionContext, workspace, WorkspaceFoldersChangeEvent } from 'vscode';
 import { Commands, ContextKeys, setContext } from './commands';
 import { fileSystemScheme } from './constants';
 import { GitHubApi } from './gitHubApi';

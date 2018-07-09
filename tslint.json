@@ -1,4 +1,5 @@
 {
+    "extends": ["tslint-prettiest"],
     "rules": {
         "adjacent-overload-signatures": true,
         "array-type": [true, "array"],
@@ -7,8 +8,9 @@
         "class-name": true,
         "comment-format": [true, "check-space"],
         "curly": [true, "ignore-same-line"],
-        "indent": [true, "spaces"],
+        "eofline": true,
         "interface-over-type-literal": true,
+        "linebreak-style": [true, "LF"],
         "new-parens": true,
         "no-angle-bracket-type-assertion": true,
         "no-consecutive-blank-lines": [true, 1],
@@ -32,13 +34,15 @@
         "ordered-imports": [
             true,
             {
-                "import-sources-order": "any",
+                "import-sources-order": "case-insensitive",
                 "named-imports-order": "case-insensitive"
             }
         ],
         "prefer-const": true,
         "prefer-for-of": true,
+        "prefer-method-signature": true,
         "prefer-template": [true, "allow-single-concat"],
+        "prettiest": [true, "spaces", 4],
         "quotemark": [true, "single", "avoid-escape"],
         "radix": true,
         "semicolon": [true, "always"],
@@ -69,13 +73,7 @@
             }
         ],
         "use-isnan": true,
-        "variable-name": [
-            true,
-            "allow-leading-underscore",
-            "allow-pascal-case",
-            "ban-keywords",
-            "check-format"
-        ],
+        "variable-name": [true, "allow-leading-underscore", "allow-pascal-case", "ban-keywords", "check-format"],
         "whitespace": [
             true,
             "check-branch",

@@ -29,12 +29,12 @@ export function setContext(key: ContextKeys | string, value: any) {
 export class Commands implements Disposable {
     private readonly _disposable: Disposable;
 
-    constructor(private readonly _github: GitHubApi) {
+    constructor(
+        private readonly _github: GitHubApi
+    ) {
         this._disposable = Disposable.from(
             ...commandRegistry.map(({ name, key, method }) =>
-                commands.registerCommand(name, (...args: any[]) =>
-                    method.apply(this, args)
-                )
+                commands.registerCommand(name, (...args: any[]) => method.apply(this, args))
             )
         );
     }
@@ -63,16 +63,11 @@ export class Commands implements Disposable {
 
     @command('cloneOpenedRepository')
     async cloneOpenedRepository() {
-        if (
-            !workspace.workspaceFolders ||
-            workspace.workspaceFolders.length === 0
-        ) {
+        if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
             return;
         }
 
-        const folders = workspace.workspaceFolders.filter(
-            f => f.uri.scheme === fileSystemScheme
-        );
+        const folders = workspace.workspaceFolders.filter(f => f.uri.scheme === fileSystemScheme);
         if (folders.length === 0) return;
 
         let folder;
@@ -80,7 +75,8 @@ export class Commands implements Disposable {
             const editor = window.activeTextEditor;
             if (editor && editor.document) {
                 folder = workspace.getWorkspaceFolder(editor.document.uri);
-            } else {
+            }
+            else {
                 while (true) {
                     folder = await window.showWorkspaceFolderPick({
                         placeHolder: 'Choose which workspace to clone'
@@ -91,7 +87,8 @@ export class Commands implements Disposable {
                     }
                 }
             }
-        } else {
+        }
+        else {
             folder = folders[0];
         }
 
@@ -112,9 +109,7 @@ export class Commands implements Disposable {
         if (!pick) return;
 
         this.openWorkspace(
-            Uri.parse(
-                `${fileSystemScheme}://github.com/${pick.repo.nameWithOwner}`
-            ),
+            Uri.parse(`${fileSystemScheme}://github.com/${pick.repo.nameWithOwner}`),
             `github.com/${pick.repo.nameWithOwner}`,
             options.replace
         );
@@ -123,42 +118,25 @@ export class Commands implements Disposable {
     async ensureTokens() {
         if (!this._github.token) {
             const token = await window.showInputBox({
-                placeHolder:
-                    'Generate a personal access token from github.com (required)',
+                placeHolder: 'Generate a personal access token from github.com (required)',
                 prompt: 'Enter a GitHub personal access token',
-                validateInput: (value: string) =>
-                    value
-                        ? undefined
-                        : 'Must be a valid GitHub personal access token',
+                validateInput: (value: string) => (value ? undefined : 'Must be a valid GitHub personal access token'),
                 ignoreFocusOut: true
             });
             if (!token) return false;
 
-            await configuration.update(
-                configuration.name('githubToken').value,
-                token,
-                ConfigurationTarget.Global
-            );
+            await configuration.update(configuration.name('githubToken').value, token, ConfigurationTarget.Global);
         }
 
         return true;
     }
 
     openWorkspace(uri: Uri, name: string, replace: boolean) {
-        const count =
-            (workspace.workspaceFolders && workspace.workspaceFolders.length) ||
-            0;
-        return workspace.updateWorkspaceFolders(
-            replace ? 0 : count,
-            replace ? count : 0,
-            { uri, name }
-        );
+        const count = (workspace.workspaceFolders && workspace.workspaceFolders.length) || 0;
+        return workspace.updateWorkspaceFolders(replace ? 0 : count, replace ? count : 0, { uri, name });
     }
 
-    private async searchForRepositories(
-        query: string,
-        cancellation: CancellationTokenSource
-    ) {
+    private async searchForRepositories(query: string, cancellation: CancellationTokenSource) {
         const repos = await this._github.repositoriesQuery(query);
         if (repos.length === 0) {
             cancellation.cancel();
@@ -183,16 +161,13 @@ export class Commands implements Disposable {
         return items;
     }
 
-    async showRepositoryPick(options: {
-        placeholder: string;
-    }): Promise<Required<RepositoryQuickPickItem> | undefined> {
+    async showRepositoryPick(options: { placeholder: string }): Promise<Required<RepositoryQuickPickItem> | undefined> {
         let initialValue: string | undefined;
         while (true) {
             let query = await window.showInputBox({
                 placeHolder:
                     'e.g. vscode-gitlens, eamodio/, eamodio/vscode-gitlens, or https://github.com/eamodio/vscode-gitlens',
-                prompt:
-                    'Enter a value or url to use to search for repositories',
+                prompt: 'Enter a value or url to use to search for repositories',
                 value: initialValue,
                 ignoreFocusOut: true
             });

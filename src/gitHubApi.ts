@@ -1,8 +1,8 @@
 'use strict';
-import { ConfigurationChangeEvent, Disposable, Uri, workspace } from 'vscode';
-import { configuration } from './configuration';
 import { GraphQLClient } from 'graphql-request';
 import { Variables } from 'graphql-request/dist/src/types';
+import { ConfigurationChangeEvent, Disposable, Uri, workspace } from 'vscode';
+import { configuration } from './configuration';
 import { Logger } from './logger';
 import { fromRemoteHubUri } from './uris';
 
@@ -13,9 +13,7 @@ export class GitHubApi implements Disposable {
     private readonly _revisionForUriMap = new Map<string, string>();
 
     constructor() {
-        this._disposable = Disposable.from(
-            configuration.onDidChange(this.onConfigurationChanged, this)
-        );
+        this._disposable = Disposable.from(configuration.onDidChange(this.onConfigurationChanged, this));
         this.onConfigurationChanged(configuration.initializingChangeEvent);
     }
 
@@ -26,10 +24,7 @@ export class GitHubApi implements Disposable {
     private async onConfigurationChanged(e: ConfigurationChangeEvent) {
         const initializing = configuration.initializing(e);
 
-        if (
-            !initializing &&
-            configuration.changed(e, configuration.name('githubToken').value)
-        ) {
+        if (!initializing && configuration.changed(e, configuration.name('githubToken').value)) {
             this._client = undefined;
         }
     }
@@ -38,12 +33,8 @@ export class GitHubApi implements Disposable {
     get token() {
         if (this._token === undefined) {
             this._token =
-                workspace
-                    .getConfiguration('github')
-                    .get<string>('accessToken') ||
-                configuration.get<string>(
-                    configuration.name('githubToken').value
-                );
+                workspace.getConfiguration('github').get<string>('accessToken') ||
+                configuration.get<string>(configuration.name('githubToken').value);
         }
         return this._token;
     }
@@ -52,9 +43,7 @@ export class GitHubApi implements Disposable {
     private get client(): GraphQLClient {
         if (this._client === undefined) {
             if (!this.token) {
-                throw new Error(
-                    'No GitHub personal access token could be found'
-                );
+                throw new Error('No GitHub personal access token could be found');
             }
 
             this._client = new GraphQLClient('https://api.github.com/graphql', {
@@ -85,24 +74,20 @@ export class GitHubApi implements Disposable {
 }`;
 
             const variables = GitHubApi.extractFSQueryVariables(uri);
-            Logger.log(
-                `GitHub.fsQuery\n\t${query}\n\t${JSON.stringify(variables)}`
-            );
+            Logger.log(`GitHub.fsQuery\n\t${query}\n\t${JSON.stringify(variables)}`);
 
             const rsp = await this.client.request<{
                 repository: { object: T };
             }>(query, variables);
             return rsp.repository.object;
-        } catch (ex) {
+        }
+        catch (ex) {
             Logger.error(ex, 'GitHub.fsQuery');
             return undefined;
         }
     }
 
-    async repositoryRevisionQuery(
-        owner: string,
-        repo: string
-    ): Promise<string | undefined> {
+    async repositoryRevisionQuery(owner: string, repo: string): Promise<string | undefined> {
         try {
             const query = `query repo($owner: String!, $repo: String!) {
     repository(owner: $owner, name: $repo) {
@@ -115,11 +100,7 @@ export class GitHubApi implements Disposable {
 }`;
 
             const variables = { owner: owner, repo: repo };
-            Logger.log(
-                `GitHub.repositoryRevisionQuery\n\t${query}\n\t${JSON.stringify(
-                    variables
-                )}`
-            );
+            Logger.log(`GitHub.repositoryRevisionQuery\n\t${query}\n\t${JSON.stringify(variables)}`);
 
             const rsp = await this.client.request<{
                 repository: { defaultBranchRef: { target: { oid: string } } };
@@ -127,7 +108,8 @@ export class GitHubApi implements Disposable {
             if (rsp.repository == null) return undefined;
 
             return rsp.repository.defaultBranchRef.target.oid;
-        } catch (ex) {
+        }
+        catch (ex) {
             Logger.error(ex, 'GitHub.repositoryRevisionQuery');
             return undefined;
         }
@@ -140,13 +122,16 @@ export class GitHubApi implements Disposable {
         if (match != null) {
             const [, owner, repo] = match;
             searchQuery = `${repo} in:name user:${owner} sort:stars-desc`;
-        } else {
+        }
+        else {
             const [ownerOrRepo, repo] = rawQuery.split('/');
             if (ownerOrRepo && repo) {
                 searchQuery = `${repo} in:name user:${ownerOrRepo} sort:stars-desc`;
-            } else if (ownerOrRepo && repo !== undefined) {
+            }
+            else if (ownerOrRepo && repo !== undefined) {
                 searchQuery = `user:${ownerOrRepo} sort:stars-desc`;
-            } else {
+            }
+            else {
                 searchQuery = `${ownerOrRepo} in:name sort:stars-desc`;
             }
         }
@@ -168,11 +153,7 @@ export class GitHubApi implements Disposable {
 }`;
 
             const variables = { query: searchQuery };
-            Logger.log(
-                `GitHub.repositoriesQuery\n\t${query}\n\t${JSON.stringify(
-                    variables
-                )}`
-            );
+            Logger.log(`GitHub.repositoriesQuery\n\t${query}\n\t${JSON.stringify(variables)}`);
 
             const rsp = await this.client.request<{
                 search: { edges: { node: Repository }[] };
@@ -180,7 +161,8 @@ export class GitHubApi implements Disposable {
             if (rsp.search == null) return [];
 
             return rsp.search.edges.map(e => e.node);
-        } catch (ex) {
+        }
+        catch (ex) {
             Logger.error(ex, 'GitHub.repositoriesQuery');
             return [];
         }

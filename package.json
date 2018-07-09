@@ -18,7 +18,7 @@
         "url": "https://github.com/eamodio/vscode-remotehub.git"
     },
     "engines": {
-        "vscode": "^1.24.0"
+        "vscode": "^1.25.0"
     },
     "main": "./out/extension",
     "icon": "images/remotehub-icon.png",
@@ -96,23 +96,24 @@
     "scripts": {
         "build": "npm run lint && tsc -m commonjs -p ./",
         "clean": "git clean -Xdf",
-        "lint": "tslint --project tsconfig.json",
+        "lint": "tslint --project tsconfig.json --fix",
         "pack": "vsce package",
         "pub": "vsce publish",
         "rebuild": "npm run reset && npm run lint && tsc -m commonjs -p ./",
         "reset": "npm run clean && npm install --no-save",
-        "watch": "tsc -watch -m commonjs -p ./",
+        "watch": "tsc --watch -m commonjs -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "vscode:prepublish": "npm run reset && npm run build"
     },
     "dependencies": {
         "graphql-request": "1.6.0",
-        "tslib": "1.9.2"
+        "tslib": "1.9.3"
     },
     "devDependencies": {
-        "@types/node": "7.0.65",
+        "@types/node": "7.0.67",
         "@types/node-fetch": "2.1.1",
-        "tslint": "5.10.0",
+        "tslint": "5.11.0",
+        "tslint-prettiest": "0.0.1",
         "typescript": "2.9.2",
         "vscode": "1.1.18"
     }

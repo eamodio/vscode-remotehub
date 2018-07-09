@@ -1,4 +1,6 @@
 'use strict';
+import { GraphQLClient } from 'graphql-request';
+import fetch from 'node-fetch';
 import {
     CancellationToken,
     Definition,
@@ -15,9 +17,7 @@ import {
     workspace,
     WorkspaceFolder
 } from 'vscode';
-import { GraphQLClient } from 'graphql-request';
 import { Logger } from './logger';
-import fetch from 'node-fetch';
 import { fromRemoteHubUri, toRemoteHubUri, toSourcegraphUri } from './uris';
 
 const hoverTypeRegex = /\*\*(.*)?\*\*(?: \_\((.*)\)\_)?/;
@@ -29,10 +29,7 @@ interface WorkspaceFolderMetadata {
 
 export class SourcegraphApi implements Disposable {
     private readonly _disposable: Disposable | undefined;
-    private readonly _metadataMap = new Map<
-        WorkspaceFolder,
-        WorkspaceFolderMetadata
-    >();
+    private readonly _metadataMap = new Map<WorkspaceFolder, WorkspaceFolderMetadata>();
 
     dispose() {
         this._disposable && this._disposable.dispose();
@@ -41,9 +38,7 @@ export class SourcegraphApi implements Disposable {
     private _client: GraphQLClient | undefined;
     get client(): GraphQLClient {
         if (this._client === undefined) {
-            this._client = new GraphQLClient(
-                'https://sourcegraph.com/.api/graphql'
-            );
+            this._client = new GraphQLClient('https://sourcegraph.com/.api/graphql');
         }
         return this._client;
     }
@@ -70,19 +65,12 @@ export class SourcegraphApi implements Disposable {
         if (!result) return undefined;
 
         const definition = result.map(
-            d =>
-                new Location(
-                    toRemoteHubUri(Uri.parse(d.uri)),
-                    SourcegraphApi.toRange(d.range)
-                )
+            d => new Location(toRemoteHubUri(Uri.parse(d.uri)), SourcegraphApi.toRange(d.range))
         );
         return definition;
     }
 
-    async documentSymbols(
-        document: TextDocument,
-        token: CancellationToken
-    ): Promise<SymbolInformation[] | undefined> {
+    async documentSymbols(document: TextDocument, token: CancellationToken): Promise<SymbolInformation[] | undefined> {
         const params = {};
 
         const result = await this.lsp<any[]>(
@@ -109,11 +97,7 @@ export class SourcegraphApi implements Disposable {
         return symbols;
     }
 
-    async hover(
-        document: TextDocument,
-        position: Position,
-        token: CancellationToken
-    ): Promise<Hover | undefined> {
+    async hover(document: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
         const params = {
             position: {
                 character: position.character,
@@ -124,13 +108,7 @@ export class SourcegraphApi implements Disposable {
         const result = await this.lsp<{
             contents: [{ value: string; language: string }, string];
             range: Range;
-        }>(
-            'textDocument/hover',
-            params,
-            document.uri,
-            document.languageId,
-            token
-        );
+        }>('textDocument/hover', params, document.uri, document.languageId, token);
         if (!result) return undefined;
 
         const s = new MarkdownString();
@@ -142,9 +120,7 @@ export class SourcegraphApi implements Disposable {
         const includeType = type !== 'function';
 
         s.appendCodeblock(
-            `${
-                includeType ? `(${modifier ? `${modifier} ` : ''}${type}) ` : ''
-            }${code.value}`,
+            `${includeType ? `(${modifier ? `${modifier} ` : ''}${type}) ` : ''}${code.value}`,
             code.language
         );
 
@@ -186,10 +162,9 @@ export class SourcegraphApi implements Disposable {
                     };
                 };
             }>(query, variables);
-            return rsp.repository.commit.tree.entries
-                .filter(p => p.isDirectory === false)
-                .map(p => p.path);
-        } catch (ex) {
+            return rsp.repository.commit.tree.entries.filter(p => p.isDirectory === false).map(p => p.path);
+        }
+        catch (ex) {
             Logger.error(ex);
             return undefined;
         }
@@ -221,11 +196,7 @@ export class SourcegraphApi implements Disposable {
         if (!result) return undefined;
 
         const locations = result.map(
-            d =>
-                new Location(
-                    toRemoteHubUri(Uri.parse(d.uri)),
-                    SourcegraphApi.toRange(d.range)
-                )
+            d => new Location(toRemoteHubUri(Uri.parse(d.uri)), SourcegraphApi.toRange(d.range))
         );
         return locations;
     }
@@ -273,7 +244,8 @@ export class SourcegraphApi implements Disposable {
                 };
             }>(graphQuery, variables);
             return rsp.search.results.results.filter(m => m.resource);
-        } catch (ex) {
+        }
+        catch (ex) {
             Logger.error(ex);
             return undefined;
         }
@@ -289,13 +261,7 @@ export class SourcegraphApi implements Disposable {
             query: query
         };
 
-        const result = await this.lsp<any[]>(
-            'workspace/symbol',
-            params,
-            uri,
-            languageId,
-            token
-        );
+        const result = await this.lsp<any[]>('workspace/symbol', params, uri, languageId, token);
         if (!result) return undefined;
 
         const symbols = result.map(
@@ -328,17 +294,11 @@ export class SourcegraphApi implements Disposable {
             } as WorkspaceFolderMetadata);
 
         const capabilities = metadata.capabilities;
-        if (
-            capabilities &&
-            !SourcegraphApi.ensureCapability(capabilities, method)
-        ) {
+        if (capabilities && !SourcegraphApi.ensureCapability(capabilities, method)) {
             return undefined;
         }
 
-        if (
-            metadata.repo.languageId === undefined ||
-            metadata.repo.revision === undefined
-        ) {
+        if (metadata.repo.languageId === undefined || metadata.repo.revision === undefined) {
             const [owner, name] = fromRemoteHubUri(uri);
             const repo = await this.repositoryQuery(owner, name);
             if (repo) {
@@ -393,26 +353,15 @@ export class SourcegraphApi implements Disposable {
                 body: JSON.stringify(body)
             });
 
-            const json = (await resp.json()) as [
-                LspResponse<{ capabilities: LspCapabilities }>,
-                LspResponse<T>
-            ];
+            const json = (await resp.json()) as [LspResponse<{ capabilities: LspCapabilities }>, LspResponse<T>];
 
             const [lspInitResp, lspMethodResp] = json;
             if (lspInitResp.error || lspMethodResp.error) {
                 if (lspInitResp.error) {
-                    Logger.warn(
-                        `Sourcegraph.lsp(${url}):initialize: ${
-                            lspInitResp.error.message
-                        }`
-                    );
+                    Logger.warn(`Sourcegraph.lsp(${url}):initialize: ${lspInitResp.error.message}`);
                 }
                 if (lspMethodResp.error) {
-                    Logger.warn(
-                        `Sourcegraph.lsp(${url}):${method}: ${
-                            lspMethodResp.error.message
-                        }`
-                    );
+                    Logger.warn(`Sourcegraph.lsp(${url}):${method}: ${lspMethodResp.error.message}`);
                 }
 
                 return undefined;
@@ -432,16 +381,14 @@ export class SourcegraphApi implements Disposable {
             }
 
             return lspMethodResp.result;
-        } catch (ex) {
+        }
+        catch (ex) {
             Logger.error(ex, 'Sourcegraph.lsp');
             return undefined;
         }
     }
 
-    async repositoryQuery(
-        owner: string,
-        repo: string
-    ): Promise<{ languageId: string; revision: string } | undefined> {
+    async repositoryQuery(owner: string, repo: string): Promise<{ languageId: string; revision: string } | undefined> {
         try {
             const query = `query getRepo($name: String!) {
     repository(name: $name) {
@@ -467,25 +414,18 @@ export class SourcegraphApi implements Disposable {
                 languageId: rsp.repository.language.toLocaleLowerCase(),
                 revision: rsp.repository.lastIndexedRevOrLatest.oid
             };
-        } catch (ex) {
+        }
+        catch (ex) {
             Logger.error(ex);
             return undefined;
         }
     }
 
     private static toRange(range: Range): Range {
-        return new Range(
-            range.start.line,
-            range.start.character,
-            range.end.line,
-            range.end.character
-        );
+        return new Range(range.start.line, range.start.character, range.end.line, range.end.character);
     }
 
-    private static ensureCapability(
-        capabilities: LspCapabilities,
-        method: string
-    ) {
+    private static ensureCapability(capabilities: LspCapabilities, method: string) {
         switch (method) {
             case 'textDocument/definition':
                 if (!capabilities.definitionProvider) return false;
