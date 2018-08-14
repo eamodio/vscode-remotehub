@@ -30,11 +30,12 @@ Copy the generated access token to your clipboard and paste it into the input bo
 
 ## RemoteHub Settings
 
-| Name                    | Description                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------ |
-| `remotehub.githubToken` | Specifies the GitHub personal access token to use for authentication with the GitHub GraphQL API |
+| Name                    | Description                                                                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `remotehub.githubToken` | Specifies the GitHub personal access token to use for authentication with the GitHub GraphQL API                                                               |
+| `remotehub.insiders`    | Specifies whether to enable experimental features                                                                                                              |
 | `remotehub.search`      | Specifies the remote service to use for repository search<br />`github` - use GitHub search (only filename search)<br />`sourcegraph` - use Sourcegraph search |
-| `remotehub.traceLevel`  | Specifies how much (if any) output will be sent to the RemoteHub output channel                  |
+| `remotehub.traceLevel`  | Specifies how much (if any) output will be sent to the RemoteHub output channel                                                                                |
 
 ## Contributors 🙏&#x2764;
 

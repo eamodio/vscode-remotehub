@@ -27,10 +27,17 @@ export class RemoteSearchProvider implements FileIndexProvider, Disposable {
         private readonly _github: GitHubApi,
         private readonly _sourcegraph: SourcegraphApi
     ) {
+        const registrations = [];
+        if (configuration.get<boolean>(configuration.name('insiders').value)) {
+            registrations.push(
+                workspace.registerFileIndexProvider(fileSystemScheme, this),
+                workspace.registerTextSearchProvider(fileSystemScheme, this)
+            );
+        }
+
         this._disposable = Disposable.from(
             configuration.onDidChange(this.onConfigurationChanged, this),
-            workspace.registerFileIndexProvider(fileSystemScheme, this),
-            workspace.registerTextSearchProvider(fileSystemScheme, this)
+            ...registrations
         );
         this.onConfigurationChanged(configuration.initializingChangeEvent);
     }

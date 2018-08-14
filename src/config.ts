@@ -14,6 +14,7 @@ export enum TraceLevel {
 
 export interface Config {
     githubToken: string;
+    insiders: boolean;
     search: Search;
     traceLevel: TraceLevel;
 }
