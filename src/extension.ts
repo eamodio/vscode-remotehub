@@ -1,6 +1,7 @@
 'use strict';
 import { ExtensionContext, workspace, WorkspaceFoldersChangeEvent } from 'vscode';
 import { Commands, ContextKeys, setContext } from './commands';
+import { Configuration } from './configuration';
 import { fileSystemScheme } from './constants';
 import { GitHubApi } from './gitHubApi';
 import { GitHubFileSystemProvider } from './gitHubFileSystemProvider';
@@ -10,6 +11,7 @@ import { SourcegraphApi } from './sourcegraphApi';
 
 export async function activate(context: ExtensionContext) {
     Logger.initialize(context);
+    Configuration.configure(context);
 
     const github = new GitHubApi();
     const commands = new Commands(github);
@@ -24,8 +26,8 @@ export async function activate(context: ExtensionContext) {
         github,
         sourcegraph,
         commands,
-        new RemoteLanguageProvider(sourcegraph),
-        new GitHubFileSystemProvider(github)
+        new GitHubFileSystemProvider(github),
+        new RemoteLanguageProvider(sourcegraph)
     );
 
     workspaceFoldersChanged({
