@@ -5,25 +5,11 @@
         "**/node_modules": true,
         "**/out": true
     },
+    "files.trimTrailingWhitespace": true,
+    "prettier.requireConfig": true,
+    "prettier.tslintIntegration": true,
     "search.exclude": {
         "**/node_modules": true,
         "**/out": true
-    },
-    "files.trimTrailingWhitespace": true,
-    "tslint.autoFixOnSave": [
-        "curly",
-        "eofline",
-        "linebreak-style",
-        "trailing-comma",
-        "no-consecutive-blank-lines",
-        "no-irregular-whitespace",
-        "object-literal-key-quotes",
-        "one-line",
-        "ordered-imports",
-        "prefer-method-signature",
-        "prettiest",
-        "quotemark",
-        "whitespace"
-    ],
-    "typescript.tsdk": "./node_modules/typescript/lib" // we want to use the TS server from our node_modules folder to control its version
+    }
 }

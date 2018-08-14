@@ -6,7 +6,8 @@
         "echo": false,
         "reveal": "always",
         "focus": false,
-        "panel": "dedicated"
+        "panel": "dedicated",
+        "showReuseMessage": false
     },
     "tasks": [
         {
@@ -20,12 +21,6 @@
             "script": "lint",
             "group": "build",
             "problemMatcher": ["$tslint5"]
-        },
-        {
-            "type": "npm",
-            "script": "rebuild",
-            "group": "build",
-            "problemMatcher": ["$tsc", "$tslint5"]
         },
         {
             "type": "npm",

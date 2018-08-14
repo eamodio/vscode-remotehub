@@ -18,7 +18,7 @@
         "url": "https://github.com/eamodio/vscode-remotehub.git"
     },
     "engines": {
-        "vscode": "^1.25.0"
+        "vscode": "^1.26.0"
     },
     "main": "./out/extension",
     "icon": "images/remotehub-icon.png",
@@ -96,25 +96,28 @@
     "scripts": {
         "build": "npm run lint && tsc -m commonjs -p ./",
         "clean": "git clean -Xdf",
-        "lint": "tslint --project tsconfig.json --fix",
+        "lint": "tslint --project tsconfig.json",
         "pack": "vsce package",
+        "pretty": "prettier --config .prettierrc --loglevel warn --write \"./**/*.ts\" && tslint --project tsconfig.json --fix",
         "pub": "vsce publish",
-        "rebuild": "npm run reset && npm run lint && tsc -m commonjs -p ./",
+        "rebuild": "npm run reset && npm run build",
         "reset": "npm run clean && npm install --no-save",
         "watch": "tsc --watch -m commonjs -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "vscode:prepublish": "npm run reset && npm run build"
     },
     "dependencies": {
-        "graphql-request": "1.6.0",
+        "graphql-request": "1.8.2",
         "tslib": "1.9.3"
     },
     "devDependencies": {
-        "@types/node": "7.0.67",
-        "@types/node-fetch": "2.1.1",
+        "@types/node": "8.10.25",
+        "@types/node-fetch": "2.1.2",
+        "prettier": "1.14.2",
+        "prettier-tslint": "0.4.0",
         "tslint": "5.11.0",
         "tslint-prettiest": "0.0.1",
-        "typescript": "2.9.2",
-        "vscode": "1.1.18"
+        "typescript": "3.0.1",
+        "vscode": "1.1.20"
     }
 }
