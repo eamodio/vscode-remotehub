@@ -1,54 +1,28 @@
 'use strict';
 import {
     CancellationToken,
-    FileSearchOptions,
-    FileSearchQuery,
-    FileType,
+    FileIndexOptions,
+    FileIndexProvider,
     Progress,
-    SearchProvider,
     TextSearchOptions,
     TextSearchQuery,
     TextSearchResult,
     Uri
 } from 'vscode';
-import { GitHubFileSystemProvider } from './gitHubFileSystemProvider';
-import { Strings } from './system';
+import { GitHubApi } from './gitHubApi';
+import { Iterables } from './system';
 import { joinPath } from './uris';
-import * as path from 'path';
 
-export class GitHubSearchProvider implements SearchProvider {
-    constructor(private readonly _githubFS: GitHubFileSystemProvider) {}
+export class GitHubSearchProvider implements FileIndexProvider {
+    constructor(
+        private readonly _github: GitHubApi
+    ) {}
 
-    async provideFileSearchResults(
-        query: FileSearchQuery,
-        options: FileSearchOptions,
-        progress: Progress<Uri>,
-        token: CancellationToken
-    ): Promise<void> {
-        void (await this.provideFileSearchResultsCore(options.folder, '', progress, token));
-    }
+    async provideFileIndex(options: FileIndexOptions, token: CancellationToken): Promise<Uri[]> {
+        const matches = await this._github.filesQuery(options.folder);
+        if (matches === undefined || token.isCancellationRequested) return [];
 
-    private async provideFileSearchResultsCore(
-        uri: Uri,
-        relativePath: string,
-        progress: Progress<Uri>,
-        token: CancellationToken
-    ): Promise<void> {
-        if (token.isCancellationRequested) return;
-
-        const items = await this._githubFS.readDirectory(joinPath(uri, relativePath));
-
-        for (const [name, type] of items) {
-            if (token.isCancellationRequested) break;
-
-            const relativeResult = Strings.normalizePath(path.join(relativePath, name));
-
-            if (type === FileType.Directory) {
-                await this.provideFileSearchResultsCore(uri, relativeResult, progress, token);
-            } else if (type === FileType.File) {
-                progress.report(joinPath(uri, relativeResult));
-            }
-        }
+        return [...Iterables.map(matches, m => joinPath(options.folder, m))];
     }
 
     async provideTextSearchResults(

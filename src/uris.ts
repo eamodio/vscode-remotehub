@@ -1,8 +1,8 @@
 'use strict';
+import * as path from 'path';
 import { Uri } from 'vscode';
 import { fileSystemScheme } from './constants';
 import { Strings } from './system';
-import * as path from 'path';
 
 type RepoInfo = [string, string, string | undefined];
 export function fromRemoteHubUri(uri: Uri): RepoInfo {

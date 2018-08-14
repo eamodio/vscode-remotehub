@@ -3,33 +3,34 @@ import {
     CancellationToken,
     ConfigurationChangeEvent,
     Disposable,
-    FileSearchOptions,
-    FileSearchQuery,
+    FileIndexOptions,
+    FileIndexProvider,
     Progress,
-    SearchProvider,
     TextSearchOptions,
     TextSearchQuery,
     TextSearchResult,
     Uri,
     workspace
 } from 'vscode';
-import { fileSystemScheme } from './constants';
 import { configuration, Search } from './configuration';
-import { GitHubFileSystemProvider } from './gitHubFileSystemProvider';
+import { fileSystemScheme } from './constants';
+import { GitHubApi } from './gitHubApi';
 import { GitHubSearchProvider } from './gitHubSearchProvider';
 import { SourcegraphApi } from './sourcegraphApi';
 import { SourceGraphSearchProvider } from './sourcegraphSearchProvider';
 
-export class RemoteSearchProvider extends Disposable implements SearchProvider {
+export class RemoteSearchProvider implements FileIndexProvider, Disposable {
     private readonly _disposable: Disposable;
     private _provider: GitHubSearchProvider | SourceGraphSearchProvider | undefined;
 
-    constructor(private readonly _gitHubFS: GitHubFileSystemProvider, private readonly _sourcegraph: SourcegraphApi) {
-        super(() => this.dispose());
-
+    constructor(
+        private readonly _github: GitHubApi,
+        private readonly _sourcegraph: SourcegraphApi
+    ) {
         this._disposable = Disposable.from(
             configuration.onDidChange(this.onConfigurationChanged, this),
-            workspace.registerSearchProvider(fileSystemScheme, this)
+            workspace.registerFileIndexProvider(fileSystemScheme, this),
+            workspace.registerTextSearchProvider(fileSystemScheme, this)
         );
         this.onConfigurationChanged(configuration.initializingChangeEvent);
     }
@@ -46,22 +47,17 @@ export class RemoteSearchProvider extends Disposable implements SearchProvider {
             const search = configuration.get<Search>(section);
             this._provider =
                 search === Search.GitHub
-                    ? new GitHubSearchProvider(this._gitHubFS)
+                    ? new GitHubSearchProvider(this._github)
                     : new SourceGraphSearchProvider(this._sourcegraph);
         }
     }
 
-    async provideFileSearchResults(
-        query: FileSearchQuery,
-        options: FileSearchOptions,
-        progress: Progress<Uri>,
-        token: CancellationToken
-    ): Promise<void> {
+    async provideFileIndex(options: FileIndexOptions, token: CancellationToken): Promise<Uri[]> {
         if (this._provider === undefined || token.isCancellationRequested) {
-            return;
+            return [];
         }
 
-        void (await this._provider.provideFileSearchResults(query, options, progress, token));
+        return this._provider.provideFileIndex(options, token);
     }
 
     async provideTextSearchResults(

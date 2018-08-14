@@ -1,34 +1,29 @@
 'use strict';
 import {
     CancellationToken,
-    FileSearchOptions,
-    FileSearchQuery,
+    FileIndexOptions,
+    FileIndexProvider,
     Progress,
     Range,
-    SearchProvider,
     TextSearchOptions,
     TextSearchQuery,
     TextSearchResult,
     Uri
 } from 'vscode';
 import { SourcegraphApi } from './sourcegraphApi';
+import { Iterables } from './system/iterable';
 import { joinPath } from './uris';
 
-export class SourceGraphSearchProvider implements SearchProvider {
-    constructor(private readonly _sourcegraph: SourcegraphApi) {}
+export class SourceGraphSearchProvider implements FileIndexProvider {
+    constructor(
+        private readonly _sourcegraph: SourcegraphApi
+    ) {}
 
-    async provideFileSearchResults(
-        query: FileSearchQuery,
-        options: FileSearchOptions,
-        progress: Progress<Uri>,
-        token: CancellationToken
-    ): Promise<void> {
+    async provideFileIndex(options: FileIndexOptions, token: CancellationToken): Promise<Uri[]> {
         const matches = await this._sourcegraph.filesQuery(options.folder);
-        if (matches === undefined || token.isCancellationRequested) return;
+        if (matches === undefined || token.isCancellationRequested) return [];
 
-        for (const m of matches) {
-            progress.report(joinPath(options.folder, m));
-        }
+        return [...Iterables.map(matches, m => joinPath(options.folder, m))];
     }
 
     async provideTextSearchResults(
@@ -41,13 +36,16 @@ export class SourceGraphSearchProvider implements SearchProvider {
         if (query.isRegExp) {
             if (query.isWordMatch) {
                 sgQuery = `\\b${query.pattern}\\b`;
-            } else {
+            }
+            else {
                 sgQuery = query.pattern;
             }
-        } else {
+        }
+        else {
             if (query.isWordMatch) {
                 sgQuery = `\\b${query.pattern}\\b`;
-            } else {
+            }
+            else {
                 sgQuery = `"${query.pattern}"`;
             }
         }

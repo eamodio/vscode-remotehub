@@ -22,15 +22,14 @@ export async function activate(context: ExtensionContext) {
     }
 
     const sourcegraph = new SourcegraphApi();
-    const gitHubFS = new GitHubFileSystemProvider(github);
     context.subscriptions.push(
         workspace.onDidChangeWorkspaceFolders(workspaceFoldersChanged),
         github,
         sourcegraph,
         commands,
-        gitHubFS,
+        new GitHubFileSystemProvider(github),
         new RemoteLanguageProvider(sourcegraph),
-        new RemoteSearchProvider(gitHubFS, sourcegraph)
+        new RemoteSearchProvider(github, sourcegraph)
     );
 
     workspaceFoldersChanged({
