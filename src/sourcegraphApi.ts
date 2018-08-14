@@ -18,6 +18,7 @@ import {
     WorkspaceFolder
 } from 'vscode';
 import { Logger } from './logger';
+import { Iterables } from './system/iterable';
 import { fromRemoteHubUri, toRemoteHubUri, toSourcegraphUri } from './uris';
 
 const hoverTypeRegex = /\*\*(.*)?\*\*(?: \_\((.*)\)\_)?/;
@@ -162,11 +163,15 @@ export class SourcegraphApi implements Disposable {
                     };
                 };
             }>(query, variables);
-            return rsp.repository.commit.tree.entries.filter(p => p.isDirectory === false).map(p => p.path);
+
+            return Iterables.filterMap(
+                rsp.repository.commit.tree.entries,
+                p => (p.isDirectory === false ? p.path : undefined)
+            );
         }
         catch (ex) {
             Logger.error(ex);
-            return undefined;
+            return [];
         }
     }
 

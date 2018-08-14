@@ -107,6 +107,7 @@
         "vscode:prepublish": "npm run reset && npm run build"
     },
     "dependencies": {
+        "@octokit/rest": "15.9.5",
         "graphql-request": "1.8.2",
         "tslib": "1.9.3"
     },
@@ -118,6 +119,6 @@
         "tslint": "5.11.0",
         "tslint-prettiest": "0.0.1",
         "typescript": "3.0.1",
-        "vscode": "1.1.20"
+        "vscode": "1.1.21"
     }
 }

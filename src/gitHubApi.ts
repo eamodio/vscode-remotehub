@@ -1,9 +1,11 @@
 'use strict';
+import * as Github from '@octokit/rest';
 import { GraphQLClient } from 'graphql-request';
 import { Variables } from 'graphql-request/dist/src/types';
 import { ConfigurationChangeEvent, Disposable, Uri, workspace } from 'vscode';
 import { configuration } from './configuration';
 import { Logger } from './logger';
+import { Iterables } from './system';
 import { fromRemoteHubUri } from './uris';
 
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
@@ -53,6 +55,30 @@ export class GitHubApi implements Disposable {
             });
         }
         return this._client;
+    }
+
+    async filesQuery(uri: Uri) {
+        const [owner, repo] = fromRemoteHubUri(uri);
+        try {
+            const resp = await new Github({
+                headers: {
+                    Authorization: `Bearer ${this.token}`
+                }
+            }).gitdata.getTree({
+                owner: owner,
+                repo: repo,
+                recursive: 1,
+                tree_sha: 'HEAD'
+            });
+            return Iterables.filterMap(
+                resp.data.tree as { type: 'blob' | 'tree'; path: string }[],
+                p => (p.type === 'blob' ? p.path : undefined)
+            );
+        }
+        catch (ex) {
+            Logger.error(ex);
+            return [];
+        }
     }
 
     getRevisionForUri(uri: Uri) {
