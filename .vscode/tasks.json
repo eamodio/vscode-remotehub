@@ -14,7 +14,7 @@
             "type": "npm",
             "script": "build",
             "group": "build",
-            "problemMatcher": ["$tsc", "$tslint5"]
+            "problemMatcher": ["$ts-webpack", "$tslint-webpack"]
         },
         {
             "type": "npm",
@@ -30,7 +30,7 @@
                 "isDefault": true
             },
             "isBackground": true,
-            "problemMatcher": ["$tsc-watch"]
+            "problemMatcher": ["$ts-webpack-watch", "$tslint-webpack-watch"]
         }
     ]
 }

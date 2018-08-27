@@ -20,7 +20,7 @@
     "engines": {
         "vscode": "^1.26.0"
     },
-    "main": "./out/extension",
+    "main": "./dist/extension",
     "icon": "images/remotehub-icon.png",
     "preview": true,
     "enableProposedApi": true,
@@ -111,7 +111,8 @@
         }
     },
     "scripts": {
-        "build": "npm run lint && tsc -m commonjs -p ./",
+        "build": "webpack --env.development",
+        "bundle": "webpack --env.production",
         "clean": "git clean -Xdf",
         "lint": "tslint --project tsconfig.json",
         "pack": "vsce package",
@@ -119,23 +120,31 @@
         "pub": "vsce publish",
         "rebuild": "npm run reset && npm run build",
         "reset": "npm run clean && npm install --no-save",
-        "watch": "tsc --watch -m commonjs -p ./",
+        "watch": "webpack --watch --env.development",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "vscode:prepublish": "npm run reset && npm run build"
+        "vscode:prepublish": "npm run reset && npm run bundle"
     },
     "dependencies": {
-        "@octokit/rest": "15.9.5",
+        "@octokit/rest": "15.10.0",
         "graphql-request": "1.8.2",
+        "node-fetch": "2.2.0",
         "tslib": "1.9.3"
     },
     "devDependencies": {
-        "@types/node": "8.10.25",
+        "@types/node": "8.10.28",
         "@types/node-fetch": "2.1.2",
+        "clean-webpack-plugin": "0.1.19",
         "prettier": "1.14.2",
         "prettier-tslint": "0.4.0",
         "tslint": "5.11.0",
+        "tslint-loader": "3.6.0",
         "tslint-prettiest": "0.0.1",
+        "ts-loader": "4.5.0",
         "typescript": "3.0.1",
-        "vscode": "1.1.21"
+        "vscode": "1.1.21",
+        "webpack": "4.17.1",
+        "webpack-cli": "3.1.0",
+        "webpack-deep-scope-plugin": "1.5.0",
+        "webpack-node-externals": "1.7.2"
     }
 }

@@ -11,9 +11,10 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "outFiles": ["${workspaceFolder}/out/**/*.js"]
+            "outFiles": ["${workspaceRoot}/dist/**/*.js"],
+            "skipFiles": ["<node_internals>/**/*.js", "**/node_modules/**/*.js", "**/extensions/**/*.js"],
+            "smartStep": true,
+            "sourceMaps": true
         },
         {
             "name": "Watch & Launch RemoteHub",
@@ -21,9 +22,10 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
-            "stopOnEntry": false,
+            "outFiles": ["${workspaceRoot}/dist/**/*.js"],
+            "skipFiles": ["<node_internals>/**/*.js", "**/node_modules/**/*.js", "**/extensions/**/*.js"],
+            "smartStep": true,
             "sourceMaps": true,
-            "outFiles": ["${workspaceRoot}/out/**/*.js"],
             "preLaunchTask": "npm: watch"
         }
     ]
