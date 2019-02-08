@@ -18,7 +18,7 @@
         "url": "https://github.com/eamodio/vscode-remotehub.git"
     },
     "engines": {
-        "vscode": "^1.26.0"
+        "vscode": "^1.31.0"
     },
     "main": "./dist/extension",
     "icon": "images/remotehub-icon.png",
@@ -108,7 +108,18 @@
                     "when": "remotehub:hasWorkspaceFolder"
                 }
             ]
+        },
+        "resourceLabelFormatters": [
+            {
+                "scheme": "remotehub",
+                "authority": "*",
+                "formatting": {
+                    "label": "${authority}${path}",
+                    "separator": "/",
+                    "workspaceSuffix": "*"
+                }
         }
+        ]
     },
     "scripts": {
         "build": "webpack --env.development",
