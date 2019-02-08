@@ -11,7 +11,7 @@ import { RemoteSearchProvider } from './remoteSearchProvider';
 import { SourcegraphApi } from './sourcegraphApi';
 
 export async function activate(context: ExtensionContext) {
-    Logger.initialize(context);
+    Logger.configure(context);
     Configuration.configure(context);
 
     const github = new GitHubApi();

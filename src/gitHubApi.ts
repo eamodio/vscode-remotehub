@@ -16,7 +16,7 @@ export class GitHubApi implements Disposable {
 
     constructor() {
         this._disposable = Disposable.from(configuration.onDidChange(this.onConfigurationChanged, this));
-        this.onConfigurationChanged(configuration.initializingChangeEvent);
+        void this.onConfigurationChanged(configuration.initializingChangeEvent);
     }
 
     dispose() {
@@ -24,9 +24,7 @@ export class GitHubApi implements Disposable {
     }
 
     private async onConfigurationChanged(e: ConfigurationChangeEvent) {
-        const initializing = configuration.initializing(e);
-
-        if (!initializing && configuration.changed(e, configuration.name('githubToken').value)) {
+        if (configuration.changed(e, configuration.name('githubToken').value)) {
             this._client = undefined;
         }
     }

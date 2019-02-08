@@ -1,8 +1,8 @@
 'use strict';
 import { MessageItem, window } from 'vscode';
-import { TraceLevel } from '../configuration';
-import { extensionId } from '../constants';
-import { Logger } from '../logger';
+import { TraceLevel } from '../../configuration';
+import { extensionId } from '../../constants';
+import { Logger } from '../../logger';
 
 export function createCommandDecorator(registry: Command[]): (command: string, options?: CommandOptions) => Function {
     return (command: string, options?: CommandOptions) => _command(registry, command, options);
@@ -22,9 +22,7 @@ export interface Command {
 
 function _command(registry: Command[], command: string, options: CommandOptions = {}): Function {
     return (target: any, key: string, descriptor: any) => {
-        if (!(typeof descriptor.value === 'function')) {
-            throw new Error('not supported');
-        }
+        if (!(typeof descriptor.value === 'function')) throw new Error('not supported');
 
         let method;
         if (!options.customErrorHandling) {

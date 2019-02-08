@@ -2,32 +2,52 @@
 import { createHash, HexBase64Latin1Encoding } from 'crypto';
 
 export namespace Strings {
-    const pathNormalizer = /\\/g;
-    const TokenRegex = /\$\{([^|]*?)(?:\|(\d+)(\-|\?)?)?\}/g;
-    const TokenSanitizeRegex = /\$\{(\w*?)(?:\W|\d)*?\}/g;
+    export const enum CharCode {
+        /**
+         * The `/` character.
+         */
+        Slash = 47,
+        /**
+         * The `\` character.
+         */
+        Backslash = 92
+    }
+
+    export function getDurationMilliseconds(start: [number, number]) {
+        const [secs, nanosecs] = process.hrtime(start);
+        return secs * 1000 + Math.floor(nanosecs / 1000000);
+    }
+
+    const pathNormalizeRegex = /\\/g;
+    const pathStripTrailingSlashRegex = /\/$/g;
+    const tokenRegex = /\$\{(\W*)?([^|]*?)(?:\|(\d+)(\-|\?)?)?(\W*)?\}/g;
+    const tokenSanitizeRegex = /\$\{(?:\W*)?(\w*?)(?:[\W\d]*)\}/g;
 
     export interface ITokenOptions {
-        padDirection: 'left' | 'right';
-        truncateTo: number | undefined;
         collapseWhitespace: boolean;
+        padDirection: 'left' | 'right';
+        prefix: string | undefined;
+        suffix: string | undefined;
+        truncateTo: number | undefined;
     }
 
     export function getTokensFromTemplate(template: string) {
         const tokens: { key: string; options: ITokenOptions }[] = [];
 
-        let match = TokenRegex.exec(template);
+        let match = tokenRegex.exec(template);
         while (match != null) {
-            const truncateTo = match[2];
-            const option = match[3];
+            const [, prefix, key, truncateTo, option, suffix] = match;
             tokens.push({
-                key: match[1],
+                key: key,
                 options: {
-                    truncateTo: truncateTo == null ? undefined : parseInt(truncateTo, 10),
+                    collapseWhitespace: option === '?',
                     padDirection: option === '-' ? 'left' : 'right',
-                    collapseWhitespace: option === '?'
+                    prefix: prefix,
+                    suffix: suffix,
+                    truncateTo: truncateTo == null ? undefined : parseInt(truncateTo, 10)
                 }
             });
-            match = TokenRegex.exec(template);
+            match = tokenRegex.exec(template);
         }
 
         return tokens;
@@ -35,11 +55,9 @@ export namespace Strings {
 
     export function interpolate(template: string, context: object | undefined): string {
         if (!template) return template;
-        if (context === undefined) {
-            return template.replace(TokenSanitizeRegex, '');
-        }
+        if (context === undefined) return template.replace(tokenSanitizeRegex, '');
 
-        template = template.replace(TokenSanitizeRegex, '$${this.$1}');
+        template = template.replace(tokenSanitizeRegex, '$${this.$1}');
         return new Function(`return \`${template}\`;`).call(context);
     }
 
@@ -62,11 +80,24 @@ export namespace Strings {
             .digest(encoding);
     }
 
-    export function normalizePath(fileName: string) {
-        const normalized = fileName && fileName.replace(pathNormalizer, '/');
-        // if (normalized && normalized.includes('..')) {
-        //     debugger;
-        // }
+    export function normalizePath(
+        fileName: string,
+        options: { addLeadingSlash?: boolean; stripTrailingSlash?: boolean } = { stripTrailingSlash: true }
+    ) {
+        if (fileName == null || fileName.length === 0) return fileName;
+
+        let normalized = fileName.replace(pathNormalizeRegex, '/');
+
+        const { addLeadingSlash, stripTrailingSlash } = { stripTrailingSlash: true, ...options };
+
+        if (stripTrailingSlash) {
+            normalized = normalized.replace(pathStripTrailingSlashRegex, '');
+        }
+
+        if (addLeadingSlash && normalized.charCodeAt(0) !== CharCode.Slash) {
+            normalized = `/${normalized}`;
+        }
+
         return normalized;
     }
 
@@ -76,48 +107,58 @@ export namespace Strings {
         return `${before === 0 ? '' : padding.repeat(before)}${s}${after === 0 ? '' : padding.repeat(after)}`;
     }
 
-    export function padLeft(s: string, padTo: number, padding: string = '\u00a0') {
-        const diff = padTo - width(s);
+    export function padLeft(s: string, padTo: number, padding: string = '\u00a0', width?: number) {
+        const diff = padTo - (width || getWidth(s));
         return diff <= 0 ? s : padding.repeat(diff) + s;
     }
 
-    export function padLeftOrTruncate(s: string, max: number, padding?: string) {
-        const len = width(s);
-        if (len < max) return padLeft(s, max, padding);
-        if (len > max) return truncate(s, max);
+    export function padLeftOrTruncate(s: string, max: number, padding?: string, width?: number) {
+        width = width || getWidth(s);
+        if (width < max) return padLeft(s, max, padding, width);
+        if (width > max) return truncate(s, max, undefined, width);
         return s;
     }
 
-    export function padRight(s: string, padTo: number, padding: string = '\u00a0') {
-        const diff = padTo - width(s);
+    export function padRight(s: string, padTo: number, padding: string = '\u00a0', width?: number) {
+        const diff = padTo - (width || getWidth(s));
         return diff <= 0 ? s : s + padding.repeat(diff);
     }
 
-    export function padOrTruncate(s: string, max: number, padding?: string) {
+    export function padOrTruncate(s: string, max: number, padding?: string, width?: number) {
         const left = max < 0;
         max = Math.abs(max);
 
-        const len = width(s);
-        if (len < max) {
-            return left ? padLeft(s, max, padding) : padRight(s, max, padding);
-        }
-        if (len > max) return truncate(s, max);
+        width = width || getWidth(s);
+        if (width < max) return left ? padLeft(s, max, padding, width) : padRight(s, max, padding, width);
+        if (width > max) return truncate(s, max, undefined, width);
         return s;
     }
 
-    export function padRightOrTruncate(s: string, max: number, padding?: string) {
-        const len = width(s);
-        if (len < max) return padRight(s, max, padding);
-        if (len > max) return truncate(s, max);
+    export function padRightOrTruncate(s: string, max: number, padding?: string, width?: number) {
+        width = width || getWidth(s);
+        if (width < max) return padRight(s, max, padding, width);
+        if (width > max) return truncate(s, max);
         return s;
+    }
+
+    export function pluralize(
+        s: string,
+        count: number,
+        options?: { number?: string; plural?: string; suffix?: string; zero?: string }
+    ) {
+        if (options === undefined) return `${count} ${s}${count === 1 ? '' : 's'}`;
+
+        return `${count === 0 ? options.zero || count : options.number || count} ${
+            count === 1 ? s : options.plural || `${s}${options.suffix || 's'}`
+        }`;
     }
 
     // Removes \ / : * ? " < > | and C0 and C1 control codes
-    const illegalCharsForFSRegEx = /[\\/:*?"<>|\x00-\x1f\x80-\x9f]/g;
+    const illegalCharsForFSRegex = /[\\/:*?"<>|\x00-\x1f\x80-\x9f]/g;
 
     export function sanitizeForFileSystem(s: string, replacement: string = '_') {
         if (!s) return s;
-        return s.replace(illegalCharsForFSRegEx, replacement);
+        return s.replace(illegalCharsForFSRegex, replacement);
     }
 
     export function sha1(s: string, encoding: HexBase64Latin1Encoding = 'base64'): string {
@@ -126,20 +167,18 @@ export namespace Strings {
             .digest(encoding);
     }
 
-    export function truncate(s: string, truncateTo: number, ellipsis: string = '\u2026') {
+    export function truncate(s: string, truncateTo: number, ellipsis: string = '\u2026', width?: number) {
         if (!s) return s;
 
-        const len = width(s);
-        if (len <= truncateTo) return s;
-        if (len === s.length) {
-            return `${s.substring(0, truncateTo - 1)}${ellipsis}`;
-        }
+        width = width || getWidth(s);
+        if (width <= truncateTo) return s;
+        if (width === s.length) return `${s.substring(0, truncateTo - 1)}${ellipsis}`;
 
         // Skip ahead to start as far as we can by assuming all the double-width characters won't be truncated
-        let chars = Math.floor(truncateTo / (len / s.length));
-        let count = width(s.substring(0, chars));
+        let chars = Math.floor(truncateTo / (width / s.length));
+        let count = getWidth(s.substring(0, chars));
         while (count < truncateTo) {
-            count += width(s[chars++]);
+            count += getWidth(s[chars++]);
         }
 
         if (count >= truncateTo) {
@@ -150,9 +189,13 @@ export namespace Strings {
     }
 
     const ansiRegex = /[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))/g;
+    const containsNonAsciiRegex = /[^\x20-\x7F\u00a0\u2026]/;
 
-    export function width(s: string): number {
-        if (!s || s.length === 0) return 0;
+    export function getWidth(s: string): number {
+        if (s == null || s.length === 0) return 0;
+
+        // Shortcut to avoid needless string `RegExp`s, replacements, and allocations
+        if (!containsNonAsciiRegex.test(s)) return s.length;
 
         s = s.replace(ansiRegex, '');
 

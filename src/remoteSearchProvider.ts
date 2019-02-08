@@ -39,7 +39,7 @@ export class RemoteSearchProvider implements FileIndexProvider, Disposable {
             configuration.onDidChange(this.onConfigurationChanged, this),
             ...registrations
         );
-        this.onConfigurationChanged(configuration.initializingChangeEvent);
+        void this.onConfigurationChanged(configuration.initializingChangeEvent);
     }
 
     dispose() {
@@ -47,10 +47,8 @@ export class RemoteSearchProvider implements FileIndexProvider, Disposable {
     }
 
     private async onConfigurationChanged(e: ConfigurationChangeEvent) {
-        const initializing = configuration.initializing(e);
-
         const section = configuration.name('search').value;
-        if (initializing || configuration.changed(e, section)) {
+        if (configuration.changed(e, section)) {
             const search = configuration.get<Search>(section);
             this._provider =
                 search === Search.GitHub
