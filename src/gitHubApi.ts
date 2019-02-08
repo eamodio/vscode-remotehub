@@ -70,9 +70,8 @@ export class GitHubApi implements Disposable {
                 recursive: 1,
                 tree_sha: 'HEAD'
             });
-            return Iterables.filterMap(
-                resp.data.tree as { type: 'blob' | 'tree'; path: string }[],
-                p => (p.type === 'blob' ? p.path : undefined)
+            return Iterables.filterMap(resp.data.tree as { type: 'blob' | 'tree'; path: string }[], p =>
+                p.type === 'blob' ? p.path : undefined
             );
         }
         catch (ex) {

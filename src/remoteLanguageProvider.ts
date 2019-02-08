@@ -41,9 +41,7 @@ export class RemoteLanguageProvider
             languages.registerHoverProvider({ scheme: fileSystemScheme, language: '*' }, this),
             languages.registerReferenceProvider({ scheme: fileSystemScheme, language: '*' }, this),
             languages.registerWorkspaceSymbolProvider(this)
-            // configuration.onDidChange(this.onConfigurationChanged, this)
         );
-        // this.onConfigurationChanged(configuration.initializingChangeEvent);
     }
 
     dispose() {

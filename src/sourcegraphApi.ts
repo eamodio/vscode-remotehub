@@ -164,9 +164,8 @@ export class SourcegraphApi implements Disposable {
                 };
             }>(query, variables);
 
-            return Iterables.filterMap(
-                rsp.repository.commit.tree.entries,
-                p => (p.isDirectory === false ? p.path : undefined)
+            return Iterables.filterMap(rsp.repository.commit.tree.entries, p =>
+                p.isDirectory === false ? p.path : undefined
             );
         }
         catch (ex) {
