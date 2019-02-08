@@ -1,45 +1,72 @@
 'use strict';
-const nodeExternals = require('webpack-node-externals');
+const path = require('path');
 const CleanPlugin = require('clean-webpack-plugin');
-const WebpackDeepScopeAnalysisPlugin = require('webpack-deep-scope-plugin').default;
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = function(env, argv) {
     env = env || {};
-    env.production = !!env.production;
-    env.optimizeImages = env.production || !!env.optimizeImages;
+    env.production = Boolean(env.production);
 
     const plugins = [new CleanPlugin(['dist'], { verbose: false })];
-    if (env.production) {
-        plugins.push(new WebpackDeepScopeAnalysisPlugin());
-    }
 
     return {
+        name: 'extension',
         entry: './src/extension.ts',
         mode: env.production ? 'production' : 'development',
         target: 'node',
-        devtool: !env.production ? 'eval-source-map' : undefined,
+        node: {
+            __dirname: false
+        },
+        devtool: 'source-map',
         output: {
             libraryTarget: 'commonjs2',
-            filename: 'extension.js',
-            devtoolModuleFilenameTemplate: 'file:///[absolute-resource-path]'
+            filename: 'extension.js'
         },
-        resolve: {
-            extensions: ['.tsx', '.ts', '.js']
+        optimization: {
+            minimizer: [
+                new TerserPlugin({
+                    cache: true,
+                    parallel: true,
+                    sourceMap: true,
+                    terserOptions: {
+                        ecma: 8,
+                        // Keep the class names otherwise @log won't provide a useful name
+                        keep_classnames: true,
+                        module: true
+                    }
+                })
+            ]
         },
-        externals: [nodeExternals()],
+        externals: {
+            vscode: 'commonjs vscode',
+            bufferutil: 'bufferutil',
+            encoding: 'encoding',
+            'utf-8-validate': 'utf-8-validate'
+        },
         module: {
             rules: [
                 {
                     test: /\.ts$/,
                     enforce: 'pre',
-                    use: 'tslint-loader'
+                    use: 'tslint-loader',
+                    exclude: /node_modules/
                 },
                 {
                     test: /\.tsx?$/,
                     use: 'ts-loader',
-                    exclude: /node_modules/
+                    exclude: /node_modules|\.d\.ts$/
                 }
-            ]
+            ],
+            // Removes `Critical dependency: the request of a dependency is an expression` from `./node_modules/vsls/vscode.js`
+            exprContextRegExp: /^$/,
+            exprContextCritical: false
+        },
+        resolve: {
+            extensions: ['.ts', '.tsx', '.js', '.jsx']
+            // alias: {
+            //     // Required because of https://github.com/bitinn/node-fetch/issues/493#issuecomment-414111024
+            //     'node-fetch': path.resolve(__dirname, 'node_modules/node-fetch/lib/index.js')
+            // }
         },
         plugins: plugins,
         stats: {

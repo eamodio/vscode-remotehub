@@ -125,26 +125,24 @@
         "vscode:prepublish": "npm run reset && npm run bundle"
     },
     "dependencies": {
-        "@octokit/rest": "15.10.0",
+        "@octokit/rest": "16.15.0",
         "graphql-request": "1.8.2",
-        "node-fetch": "2.2.0",
+        "node-fetch": "2.3.0",
         "tslib": "1.9.3"
     },
     "devDependencies": {
-        "@types/node": "8.10.28",
-        "@types/node-fetch": "2.1.2",
-        "clean-webpack-plugin": "0.1.19",
-        "prettier": "1.14.2",
-        "prettier-tslint": "0.4.0",
-        "tslint": "5.11.0",
-        "tslint-loader": "3.6.0",
+        "@types/node": "10.1.4",
+        "@types/node-fetch": "2.1.4",
+        "clean-webpack-plugin": "1.0.1",
+        "prettier": "1.16.4",
+        "prettier-tslint": "0.4.2",
+        "tslint": "5.12.1",
+        "tslint-loader": "3.5.4",
         "tslint-prettiest": "0.0.1",
-        "ts-loader": "4.5.0",
-        "typescript": "3.0.1",
-        "vscode": "1.1.21",
-        "webpack": "4.17.1",
-        "webpack-cli": "3.1.0",
-        "webpack-deep-scope-plugin": "1.5.0",
-        "webpack-node-externals": "1.7.2"
+        "ts-loader": "5.3.3",
+        "typescript": "3.3.3",
+        "vscode": "1.1.29",
+        "webpack": "4.29.3",
+        "webpack-cli": "3.2.3"
     }
 }

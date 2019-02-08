@@ -64,7 +64,7 @@ export class GitHubApi implements Disposable {
                 headers: {
                     Authorization: `Bearer ${this.token}`
                 }
-            }).gitdata.getTree({
+            }).git.getTree({
                 owner: owner,
                 repo: repo,
                 recursive: 1,
