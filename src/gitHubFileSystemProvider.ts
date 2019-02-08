@@ -27,7 +27,8 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
     ) {
         this._disposable = Disposable.from(
             workspace.registerFileSystemProvider(fileSystemScheme, this, {
-                isCaseSensitive: true
+                isCaseSensitive: true,
+                isReadonly: true
             })
             // workspace.onDidCloseTextDocument(this.onClosedTextDocument, this)
         );
@@ -119,7 +120,6 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
             this._github.setRevisionForUri(uri, data.oid);
         }
 
-        let buffer;
         if (data && data.isBinary) {
             const [owner, repo, path] = fromRemoteHubUri(uri);
             // e.g. https://raw.githubusercontent.com/eamodio/vscode-gitlens/HEAD/images/gitlens-icon.png
@@ -129,13 +129,10 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
                 path: `/${owner}/${repo}/HEAD/${path}`
             });
 
-            buffer = await GitHubFileSystemProvider.downloadBinary(downloadUri);
-        }
-        else {
-            buffer = Buffer.from((data && data.text) || '');
+            return await GitHubFileSystemProvider.downloadBinary(downloadUri);
         }
 
-        return GitHubFileSystemProvider.bufferToUint8Array(buffer);
+        return Buffer.from((data && data.text) || '');
     }
 
     writeFile(): void | Thenable<void> {

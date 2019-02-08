@@ -5,8 +5,13 @@ import {
     Disposable,
     FileIndexOptions,
     FileIndexProvider,
+    FileSearchOptions,
+    FileSearchProvider,
+    FileSearchQuery,
     Progress,
+    TextSearchComplete,
     TextSearchOptions,
+    TextSearchProvider,
     TextSearchQuery,
     TextSearchResult,
     Uri,
@@ -19,7 +24,7 @@ import { GitHubSearchProvider } from './gitHubSearchProvider';
 import { SourcegraphApi } from './sourcegraphApi';
 import { SourceGraphSearchProvider } from './sourcegraphSearchProvider';
 
-export class RemoteSearchProvider implements FileIndexProvider, Disposable {
+export class RemoteSearchProvider implements FileIndexProvider, FileSearchProvider, TextSearchProvider, Disposable {
     private readonly _disposable: Disposable;
     private _provider: GitHubSearchProvider | SourceGraphSearchProvider | undefined;
 
@@ -31,6 +36,7 @@ export class RemoteSearchProvider implements FileIndexProvider, Disposable {
         if (configuration.get<boolean>(configuration.name('insiders').value)) {
             registrations.push(
                 workspace.registerFileIndexProvider(fileSystemScheme, this),
+                // workspace.registerFileSearchProvider(fileSystemScheme, this),
                 workspace.registerTextSearchProvider(fileSystemScheme, this)
             );
         }
@@ -65,16 +71,28 @@ export class RemoteSearchProvider implements FileIndexProvider, Disposable {
         return this._provider.provideFileIndex(options, token);
     }
 
+    async provideFileSearchResults(
+        query: FileSearchQuery,
+        options: FileSearchOptions,
+        token: CancellationToken
+    ): Promise<Uri[]> {
+        if (this._provider === undefined || token.isCancellationRequested) {
+            return [];
+        }
+
+        return this._provider.provideFileSearchResults(query, options, token);
+    }
+
     async provideTextSearchResults(
         query: TextSearchQuery,
         options: TextSearchOptions,
         progress: Progress<TextSearchResult>,
         token: CancellationToken
-    ): Promise<void> {
+    ): Promise<TextSearchComplete> {
         if (this._provider === undefined || token.isCancellationRequested) {
-            return;
+            return { limitHit: true };
         }
 
-        void (await this._provider.provideTextSearchResults(query, options, progress, token));
+        return this._provider.provideTextSearchResults(query, options, progress, token);
     }
 }
