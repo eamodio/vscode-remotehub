@@ -27,7 +27,8 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
     ) {
         this._disposable = Disposable.from(
             workspace.registerFileSystemProvider(fileSystemScheme, this, {
-                isCaseSensitive: true
+                isCaseSensitive: true,
+                isReadonly: true
             })
             // workspace.onDidCloseTextDocument(this.onClosedTextDocument, this)
         );
