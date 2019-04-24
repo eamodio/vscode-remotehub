@@ -1,14 +1,14 @@
 'use strict';
 import { MessageItem, window } from 'vscode';
-import { TraceLevel } from '../../configuration';
 import { extensionId } from '../../constants';
-import { Logger } from '../../logger';
+import { Logger, TraceLevel } from '../../logger';
 
 export function createCommandDecorator(registry: Command[]): (command: string, options?: CommandOptions) => Function {
     return (command: string, options?: CommandOptions) => _command(registry, command, options);
 }
 
 export interface CommandOptions {
+    args?(...args: any[]): any[];
     customErrorHandling?: boolean;
     showErrorMessage?: string;
 }
@@ -28,7 +28,7 @@ function _command(registry: Command[], command: string, options: CommandOptions 
         if (!options.customErrorHandling) {
             method = async function(this: any, ...args: any[]) {
                 try {
-                    return await descriptor.value.apply(this, args);
+                    return await descriptor.value.apply(this, options.args ? options.args(args) : args);
                 }
                 catch (ex) {
                     Logger.error(ex);
@@ -49,6 +49,8 @@ function _command(registry: Command[], command: string, options: CommandOptions 
                             window.showErrorMessage(`${options.showErrorMessage} \u00a0\u2014\u00a0 ${ex.toString()}`);
                         }
                     }
+
+                    return undefined;
                 }
             };
         }

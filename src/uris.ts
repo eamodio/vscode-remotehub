@@ -27,7 +27,7 @@ export function toRemoteHubUri(uri: Uri): Uri {
     });
 }
 
-export function toSourcegraphUri(uri: Uri, rev: string): Uri {
+export function toSourcegraphUri(uri: Uri, rev?: string): Uri {
     const [owner, repo, path] = fromRemoteHubUri(uri);
 
     // e.g. git://github.com/eamodio/vscode-gitlens?<rev>#src/extension.ts

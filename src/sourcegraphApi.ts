@@ -21,11 +21,11 @@ import { Logger } from './logger';
 import { Iterables } from './system/iterable';
 import { fromRemoteHubUri, toRemoteHubUri, toSourcegraphUri } from './uris';
 
-const hoverTypeRegex = /\*\*(.*)?\*\*(?: \_\((.*)\)\_)?/;
+const hoverTypeRegex = /\*\*(.*)?\*\*(?: _\((.*)\)_)?/;
 
 interface WorkspaceFolderMetadata {
-    capabilities: LspCapabilities;
-    repo: { languageId: string; revision: string };
+    capabilities?: LspCapabilities;
+    repo: { languageId: string | undefined; revision: string | undefined };
 }
 
 export class SourcegraphApi implements Disposable {
@@ -83,18 +83,12 @@ export class SourcegraphApi implements Disposable {
         );
         if (!result) return undefined;
 
-        const symbols = result.map(
-            s =>
-                ({
-                    name: s.name,
-                    containerName: s.containerName,
-                    kind: s.kind,
-                    location: new Location(
-                        toRemoteHubUri(Uri.parse(s.location.uri)),
-                        SourcegraphApi.toRange(s.location.range)
-                    )
-                } as SymbolInformation)
-        );
+        const symbols = result.map<SymbolInformation>(s => ({
+            name: s.name,
+            containerName: s.containerName,
+            kind: s.kind,
+            location: new Location(toRemoteHubUri(Uri.parse(s.location.uri)), SourcegraphApi.toRange(s.location.range))
+        }));
         return symbols;
     }
 
@@ -268,18 +262,12 @@ export class SourcegraphApi implements Disposable {
         const result = await this.lsp<any[]>('workspace/symbol', params, uri, languageId, token);
         if (!result) return undefined;
 
-        const symbols = result.map(
-            s =>
-                ({
-                    name: s.name,
-                    containerName: s.containerName,
-                    kind: s.kind,
-                    location: new Location(
-                        toRemoteHubUri(Uri.parse(s.location.uri)),
-                        SourcegraphApi.toRange(s.location.range)
-                    )
-                } as SymbolInformation)
-        );
+        const symbols = result.map<SymbolInformation>(s => ({
+            name: s.name,
+            containerName: s.containerName,
+            kind: s.kind,
+            location: new Location(toRemoteHubUri(Uri.parse(s.location.uri)), SourcegraphApi.toRange(s.location.range))
+        }));
         return symbols;
     }
 
@@ -291,11 +279,9 @@ export class SourcegraphApi implements Disposable {
         token: CancellationToken
     ): Promise<T | undefined> {
         const folder = workspace.getWorkspaceFolder(uri);
-        const metadata =
-            (folder && this._metadataMap.get(folder)) ||
-            ({
-                repo: {}
-            } as WorkspaceFolderMetadata);
+        const metadata: WorkspaceFolderMetadata = (folder && this._metadataMap.get(folder)) || {
+            repo: { languageId: undefined, revision: undefined }
+        };
 
         const capabilities = metadata.capabilities;
         if (capabilities && !SourcegraphApi.ensureCapability(capabilities, method)) {
@@ -356,6 +342,11 @@ export class SourcegraphApi implements Disposable {
                 method: 'POST',
                 body: JSON.stringify(body)
             });
+
+            if (!resp.ok) {
+                Logger.warn(`Sourcegraph.lsp(${url}) returned ${resp.status}: ${resp.statusText}`);
+                return undefined;
+            }
 
             const json = (await resp.json()) as [LspResponse<{ capabilities: LspCapabilities }>, LspResponse<T>];
 

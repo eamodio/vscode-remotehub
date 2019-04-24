@@ -23,7 +23,7 @@ export class GitHubApi implements Disposable {
         this._disposable && this._disposable.dispose();
     }
 
-    private async onConfigurationChanged(e: ConfigurationChangeEvent) {
+    private onConfigurationChanged(e: ConfigurationChangeEvent) {
         if (configuration.changed(e, configuration.name('githubToken').value)) {
             this._client = undefined;
         }
@@ -66,6 +66,7 @@ export class GitHubApi implements Disposable {
                 owner: owner,
                 repo: repo,
                 recursive: 1,
+                // eslint-disable-next-line @typescript-eslint/camelcase
                 tree_sha: 'HEAD'
             });
             return Iterables.filterMap(resp.data.tree as { type: 'blob' | 'tree'; path: string }[], p =>

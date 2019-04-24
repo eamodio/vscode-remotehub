@@ -32,9 +32,7 @@ export class RemoteLanguageProvider
         WorkspaceSymbolProvider {
     private readonly _disposable: Disposable;
 
-    constructor(
-        private _sourcegraph: SourcegraphApi
-    ) {
+    constructor(private _sourcegraph: SourcegraphApi) {
         this._disposable = Disposable.from(
             languages.registerDefinitionProvider({ scheme: fileSystemScheme, language: '*' }, this),
             languages.registerDocumentSymbolProvider({ scheme: fileSystemScheme, language: '*' }, this),

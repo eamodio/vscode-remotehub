@@ -1,9 +1,8 @@
 'use strict';
 import {
     CancellationToken,
-    FileIndexOptions,
-    FileIndexProvider,
     FileSearchOptions,
+    FileSearchProvider,
     FileSearchQuery,
     Progress,
     Range,
@@ -18,27 +17,19 @@ import { SourcegraphApi } from './sourcegraphApi';
 import { Iterables } from './system/iterable';
 import { joinPath } from './uris';
 
-export class SourceGraphSearchProvider implements FileIndexProvider, TextSearchProvider {
-    constructor(
-        private readonly _sourcegraph: SourcegraphApi
-    ) {}
-
-    async provideFileIndex(options: FileIndexOptions, token: CancellationToken): Promise<Uri[]> {
-        const matches = await this._sourcegraph.filesQuery(options.folder);
-        if (matches === undefined || token.isCancellationRequested) return [];
-
-        return [...Iterables.map(matches, m => joinPath(options.folder, m))];
-    }
+export class SourceGraphSearchProvider implements FileSearchProvider, TextSearchProvider {
+    constructor(private readonly _sourcegraph: SourcegraphApi) {}
 
     async provideFileSearchResults(
         query: FileSearchQuery,
         options: FileSearchOptions,
         token: CancellationToken
     ): Promise<Uri[]> {
-        if (query.pattern == null || query.pattern.length === 0) return this.provideFileIndex(options, token);
+        const matches = await this._sourcegraph.filesQuery(options.folder);
+        if (matches === undefined || token.isCancellationRequested) return [];
 
-        // TODO:
-        return [];
+        const results = [...Iterables.map(matches, m => joinPath(options.folder, m))];
+        return results;
     }
 
     async provideTextSearchResults(
@@ -56,13 +47,11 @@ export class SourceGraphSearchProvider implements FileIndexProvider, TextSearchP
                 sgQuery = query.pattern;
             }
         }
+        else if (query.isWordMatch) {
+            sgQuery = `\\b${query.pattern}\\b`;
+        }
         else {
-            if (query.isWordMatch) {
-                sgQuery = `\\b${query.pattern}\\b`;
-            }
-            else {
-                sgQuery = `"${query.pattern}"`;
-            }
+            sgQuery = `"${query.pattern}"`;
         }
 
         if (query.isCaseSensitive) {

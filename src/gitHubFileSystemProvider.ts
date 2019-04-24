@@ -22,9 +22,7 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
     private readonly _disposable: Disposable;
     private _fsCache = new Map<string, any>();
 
-    constructor(
-        private readonly _github: GitHubApi
-    ) {
+    constructor(private readonly _github: GitHubApi) {
         this._disposable = Disposable.from(
             workspace.registerFileSystemProvider(fileSystemScheme, this, {
                 isCaseSensitive: true,
@@ -50,7 +48,11 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
     // }
 
     watch(): Disposable {
-        return { dispose: () => {} };
+        return {
+            dispose: () => {
+                /* noop */
+            }
+        };
     }
 
     async stat(uri: Uri): Promise<FileStat> {
@@ -129,7 +131,7 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
                 path: `/${owner}/${repo}/HEAD/${path}`
             });
 
-            return await GitHubFileSystemProvider.downloadBinary(downloadUri);
+            return GitHubFileSystemProvider.downloadBinary(downloadUri);
         }
 
         return Buffer.from((data && data.text) || '');
@@ -153,7 +155,7 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
 
     private async fsQuery<T>(uri: Uri, query: string, cache?: Map<string, any>): Promise<T | undefined> {
         if (cache === undefined) {
-            return await this._github.fsQuery<T>(uri, query);
+            return this._github.fsQuery<T>(uri, query);
         }
 
         const key = `${uri.toString()}:${Strings.sha1(query)}`;

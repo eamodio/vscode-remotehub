@@ -1,13 +1,35 @@
 'use strict';
-const path = require('path');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const CleanPlugin = require('clean-webpack-plugin');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = function(env, argv) {
     env = env || {};
-    env.production = Boolean(env.production);
+    env.analyzeBundle = Boolean(env.analyzeBundle);
+    env.analyzeDeps = Boolean(env.analyzeDeps);
+    env.production = env.analyzeBundle || Boolean(env.production);
 
-    const plugins = [new CleanPlugin(['dist'], { verbose: false })];
+    const plugins = [new CleanPlugin()];
+
+    if (env.analyzeDeps) {
+        plugins.push(
+            new CircularDependencyPlugin({
+                cwd: __dirname,
+                exclude: /node_modules/,
+                failOnError: false,
+                onDetected: function({ module: webpackModuleRecord, paths, compilation }) {
+                    if (paths.some(p => /container\.ts/.test(p))) return;
+
+                    compilation.warnings.push(new Error(paths.join(' -> ')));
+                }
+            })
+        );
+    }
+
+    if (env.analyzeBundle) {
+        plugins.push(new BundleAnalyzerPlugin());
+    }
 
     return {
         name: 'extension',
@@ -48,7 +70,15 @@ module.exports = function(env, argv) {
                 {
                     test: /\.ts$/,
                     enforce: 'pre',
-                    use: 'tslint-loader',
+                    use: [
+                        {
+                            loader: 'eslint-loader',
+                            options: {
+                                cache: true,
+                                failOnError: true
+                            }
+                        }
+                    ],
                     exclude: /node_modules/
                 },
                 {
@@ -62,7 +92,7 @@ module.exports = function(env, argv) {
             exprContextCritical: false
         },
         resolve: {
-            extensions: ['.ts', '.tsx', '.js', '.jsx']
+            extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
             // alias: {
             //     // Required because of https://github.com/bitinn/node-fetch/issues/493#issuecomment-414111024
             //     'node-fetch': path.resolve(__dirname, 'node_modules/node-fetch/lib/index.js')

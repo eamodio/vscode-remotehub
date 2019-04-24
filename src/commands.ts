@@ -29,9 +29,7 @@ export function setContext(key: ContextKeys | string, value: any) {
 export class Commands implements Disposable {
     private readonly _disposable: Disposable;
 
-    constructor(
-        private readonly _github: GitHubApi
-    ) {
+    constructor(private readonly _github: GitHubApi) {
         this._disposable = Disposable.from(
             ...commandRegistry.map(({ name, key, method }) =>
                 commands.registerCommand(name, (...args: any[]) => method.apply(this, args))
@@ -44,7 +42,7 @@ export class Commands implements Disposable {
     }
 
     @command('addRepository')
-    async addRepository() {
+    addRepository() {
         return this.openRepository({ replace: false });
     }
 
@@ -133,7 +131,7 @@ export class Commands implements Disposable {
 
     openWorkspace(uri: Uri, name: string, replace: boolean) {
         const count = (workspace.workspaceFolders && workspace.workspaceFolders.length) || 0;
-        return workspace.updateWorkspaceFolders(replace ? 0 : count, replace ? count : 0, { uri, name });
+        return workspace.updateWorkspaceFolders(replace ? 0 : count, replace ? count : 0, { uri: uri, name: name });
     }
 
     private async searchForRepositories(query: string, cancellation: CancellationTokenSource) {
@@ -143,20 +141,18 @@ export class Commands implements Disposable {
             return [];
         }
 
-        const items = repos.map(
-            r =>
-                ({
-                    label: r.name,
-                    description: r.url,
-                    detail: r.description,
-                    repo: r
-                } as RepositoryQuickPickItem)
-        );
+        const items = repos.map<RepositoryQuickPickItem>(r => ({
+            label: r.name,
+            description: r.url,
+            detail: r.description,
+            repo: r
+        }));
 
-        items.splice(0, 0, {
-            label: `go back \u21a9`,
-            description: `\u00a0\u00a0\u2014\u00a0\u00a0\u00a0 to search again`
-        } as RepositoryQuickPickItem);
+        const goBack: RepositoryQuickPickItem = {
+            label: 'go back \u21a9',
+            description: '\u00a0\u00a0\u2014\u00a0\u00a0\u00a0 to search again'
+        };
+        items.splice(0, 0, goBack);
 
         return items;
     }

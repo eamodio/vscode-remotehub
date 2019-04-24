@@ -1,13 +1,13 @@
 'use strict';
 
-interface IPropOfValue {
+interface PropOfValue {
     (): any;
     value: string | undefined;
 }
 
 export namespace Functions {
     const comma = ',';
-    const empty = '';
+    const emptyStr = '';
     const equals = '=';
     const openBrace = '{';
     const openParen = '(';
@@ -23,7 +23,7 @@ export namespace Functions {
         if (fn.length === 0) return [];
 
         let fnBody: string = Function.prototype.toString.call(fn);
-        fnBody = fnBody.replace(fnBodyStripCommentsRegex, empty) || fnBody;
+        fnBody = fnBody.replace(fnBodyStripCommentsRegex, emptyStr) || fnBody;
         fnBody = fnBody.slice(0, fnBody.indexOf(openBrace));
 
         let open = fnBody.indexOf(openParen);
@@ -37,19 +37,19 @@ export namespace Functions {
 
         const match = fnBody.match(fnBodyRegex);
         return match != null
-            ? match[1].split(comma).map(param => param.trim().replace(fnBodyStripParamDefaultValueRegex, empty))
+            ? match[1].split(comma).map(param => param.trim().replace(fnBodyStripParamDefaultValueRegex, emptyStr))
             : [];
     }
 
-    export function isPromise(o: any): o is Promise<any> {
-        return (typeof o === 'object' || typeof o === 'function') && typeof o.then === 'function';
+    export function isPromise<T>(obj: T | Promise<T>): obj is Promise<T> {
+        return obj && typeof (obj as Promise<T>).then === 'function';
     }
 
     export function propOf<T, K extends Extract<keyof T, string>>(o: T, key: K) {
         const propOfCore = <T, K extends Extract<keyof T, string>>(o: T, key: K) => {
             const value: string =
-                (propOfCore as IPropOfValue).value === undefined ? key : `${(propOfCore as IPropOfValue).value}.${key}`;
-            (propOfCore as IPropOfValue).value = value;
+                (propOfCore as PropOfValue).value === undefined ? key : `${(propOfCore as PropOfValue).value}.${key}`;
+            (propOfCore as PropOfValue).value = value;
             const fn = <Y extends Extract<keyof T[K], string>>(k: Y) => propOfCore(o[key], k);
             return Object.assign(fn, { value: value });
         };
