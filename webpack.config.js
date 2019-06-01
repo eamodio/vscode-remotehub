@@ -1,6 +1,7 @@
 'use strict';
+/* eslint-disable @typescript-eslint/no-var-requires */
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const CleanPlugin = require('clean-webpack-plugin');
+const { CleanWebpackPlugin: CleanPlugin } = require('clean-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
@@ -10,6 +11,9 @@ module.exports = function(env, argv) {
     env.analyzeDeps = Boolean(env.analyzeDeps);
     env.production = env.analyzeBundle || Boolean(env.production);
 
+    /**
+     * @type any[]
+     */
     const plugins = [new CleanPlugin()];
 
     if (env.analyzeDeps) {
@@ -53,6 +57,7 @@ module.exports = function(env, argv) {
                     terserOptions: {
                         ecma: 8,
                         // Keep the class names otherwise @log won't provide a useful name
+                        // eslint-disable-next-line @typescript-eslint/camelcase
                         keep_classnames: true,
                         module: true
                     }

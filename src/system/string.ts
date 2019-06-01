@@ -36,8 +36,11 @@ export namespace Strings {
     export function getTokensFromTemplate(template: string) {
         const tokens: { key: string; options: TokenOptions }[] = [];
 
-        let match = tokenRegex.exec(template);
-        while (match != null) {
+        let match;
+        do {
+            match = tokenRegex.exec(template);
+            if (match == null) break;
+
             const [, prefix, key, truncateTo, option, suffix] = match;
             tokens.push({
                 key: key,
@@ -49,8 +52,7 @@ export namespace Strings {
                     truncateTo: truncateTo == null ? undefined : parseInt(truncateTo, 10)
                 }
             });
-            match = tokenRegex.exec(template);
-        }
+        } while (match != null);
 
         return tokens;
     }
