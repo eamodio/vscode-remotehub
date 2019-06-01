@@ -43,7 +43,7 @@ export class Commands implements Disposable {
 
     @command('addRepository')
     addRepository() {
-        return this.openRepository({ replace: false });
+        return this.openRepository({ location: 'addToCurrentWorkspace' });
     }
 
     @command('cloneRepository')
@@ -98,7 +98,9 @@ export class Commands implements Disposable {
     }
 
     @command('openRepository')
-    async openRepository(options: { replace: boolean } = { replace: true }) {
+    async openRepository(
+        options: { location: 'currentWindow' | 'newWindow' | 'addToCurrentWorkspace' } = { location: 'currentWindow' }
+    ) {
         if (!(await this.ensureTokens())) return;
 
         const pick = await this.showRepositoryPick({
@@ -109,8 +111,13 @@ export class Commands implements Disposable {
         this.openWorkspace(
             Uri.parse(`${fileSystemScheme}://github.com/${pick.repo.nameWithOwner}`),
             `github.com/${pick.repo.nameWithOwner}`,
-            options.replace
+            options.location
         );
+    }
+
+    @command('openRepositoryInNewWindow')
+    openRepositoryInNewWindow() {
+        return this.openRepository({ location: 'newWindow' });
     }
 
     async ensureTokens() {
@@ -129,9 +136,13 @@ export class Commands implements Disposable {
         return true;
     }
 
-    openWorkspace(uri: Uri, name: string, replace: boolean) {
-        const count = (workspace.workspaceFolders && workspace.workspaceFolders.length) || 0;
-        return workspace.updateWorkspaceFolders(replace ? 0 : count, replace ? count : 0, { uri: uri, name: name });
+    openWorkspace(uri: Uri, name: string, location: 'currentWindow' | 'newWindow' | 'addToCurrentWorkspace') {
+        if (location === 'addToCurrentWorkspace') {
+            const count = (workspace.workspaceFolders && workspace.workspaceFolders.length) || 0;
+            return workspace.updateWorkspaceFolders(count, 0, { uri: uri, name: name });
+        }
+
+        return commands.executeCommand('vscode.openFolder', uri, location === 'newWindow');
     }
 
     private async searchForRepositories(query: string, cancellation: CancellationTokenSource) {

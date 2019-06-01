@@ -37,7 +37,8 @@
         "onFileSystem:remotehub",
         "onCommand:remotehub.addRepository",
         "onCommand:remotehub.cloneRepository",
-        "onCommand:remotehub.openRepository"
+        "onCommand:remotehub.openRepository",
+        "onCommand:remotehub.openRepositoryInNewWindow"
     ],
     "contributes": {
         "configuration": {
@@ -99,6 +100,11 @@
                 "command": "remotehub.openRepository",
                 "title": "Open GitHub Repository...",
                 "category": "RemoteHub"
+            },
+            {
+                "command": "remotehub.openRepositoryInNewWindow",
+                "title": "Open GitHub Repository in New Window...",
+                "category": "RemoteHub"
             }
         ],
         "menus": {
@@ -116,7 +122,7 @@
                 "formatting": {
                     "label": "${authority}${path}",
                     "separator": "/",
-                    "workspaceSuffix": "*"
+                    "workspaceSuffix": "GitHub"
                 }
             }
         ]

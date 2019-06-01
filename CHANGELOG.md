@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Added
 
 - Adds support for searching the remote repository
+- Adds a `Open GitHub Repository in New Window...` command (`remotehub.openRepositoryInNewWindow`) which allows you to search for a remote GitHub repository to open in a new window
 
 ## [0.2.0] - 2018-06-20
 
