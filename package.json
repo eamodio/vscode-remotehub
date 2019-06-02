@@ -92,8 +92,13 @@
                 "category": "RemoteHub"
             },
             {
-                "command": "remotehub.cloneOpenedRepository",
-                "title": "Clone Opened GitHub Repository...",
+                "command": "remotehub.cloneCurrentRepository",
+                "title": "Clone Current Remote Repository...",
+                "category": "RemoteHub"
+            },
+            {
+                "command": "remotehub.openCurrentRepositoryOnGitHub",
+                "title": "Open Current Remote Repository on GitHub...",
                 "category": "RemoteHub"
             },
             {
@@ -110,7 +115,11 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "remotehub.cloneOpenedRepository",
+                    "command": "remotehub.cloneCurrentRepository",
+                    "when": "remotehub:hasWorkspaceFolder"
+                },
+                {
+                    "command": "remotehub.openCurrentRepositoryOnGitHub",
                     "when": "remotehub:hasWorkspaceFolder"
                 }
             ]

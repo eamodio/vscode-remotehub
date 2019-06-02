@@ -4,10 +4,12 @@ import {
     commands,
     ConfigurationTarget,
     Disposable,
+    env,
     QuickPickItem,
     Uri,
     window,
-    workspace
+    workspace,
+    WorkspaceFolder
 } from 'vscode';
 import { configuration } from './configuration';
 import { fileSystemScheme } from './constants';
@@ -59,42 +61,24 @@ export class Commands implements Disposable {
         commands.executeCommand('git.clone', url);
     }
 
-    @command('cloneOpenedRepository')
-    async cloneOpenedRepository() {
-        if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
-            return;
-        }
-
-        const folders = workspace.workspaceFolders.filter(f => f.uri.scheme === fileSystemScheme);
-        if (folders.length === 0) return;
-
-        let folder;
-        if (folders.length > 1) {
-            const editor = window.activeTextEditor;
-            if (editor && editor.document) {
-                folder = workspace.getWorkspaceFolder(editor.document.uri);
-            }
-            else {
-                while (true) {
-                    folder = await window.showWorkspaceFolderPick({
-                        placeHolder: 'Choose which workspace to clone'
-                    });
-
-                    if (!folder || folder.uri.scheme === fileSystemScheme) {
-                        break;
-                    }
-                }
-            }
-        }
-        else {
-            folder = folders[0];
-        }
-
-        if (!folder) return;
+    @command('cloneCurrentRepository')
+    async cloneCurrentRepository() {
+        const folder = await this.pickRemoteRepository('Choose which remote repository to clone');
+        if (folder === undefined) return;
 
         const [owner, repo] = fromRemoteHubUri(folder.uri);
         const url = `https://${folder.uri.authority}/${owner}/${repo}.git`;
         commands.executeCommand('git.clone', url);
+    }
+
+    @command('openCurrentRepositoryOnGitHub')
+    async openCurrentRepositoryOnGitHub() {
+        const folder = await this.pickRemoteRepository('Choose which remote repository to open on GitHub');
+        if (folder === undefined) return;
+
+        const [owner, repo] = fromRemoteHubUri(folder.uri);
+        const url = `https://${folder.uri.authority}/${owner}/${repo}.git`;
+        env.openExternal(Uri.parse(url));
     }
 
     @command('openRepository')
@@ -143,6 +127,36 @@ export class Commands implements Disposable {
         }
 
         return commands.executeCommand('vscode.openFolder', uri, location === 'newWindow');
+    }
+
+    private async pickRemoteRepository(placeHolder: string): Promise<WorkspaceFolder | undefined> {
+        if (workspace.workspaceFolders === undefined || workspace.workspaceFolders.length === 0) {
+            return undefined;
+        }
+
+        const folders = workspace.workspaceFolders.filter(f => f.uri.scheme === fileSystemScheme);
+        if (folders.length === 0) return undefined;
+        if (folders.length === 1) return folders[0];
+
+        let folder;
+
+        const editor = window.activeTextEditor;
+        if (editor !== undefined && editor.document !== undefined) {
+            folder = workspace.getWorkspaceFolder(editor.document.uri);
+            if (folder !== undefined && folder.uri.scheme === fileSystemScheme) return folder;
+        }
+
+        while (true) {
+            folder = await window.showWorkspaceFolderPick({
+                placeHolder: placeHolder
+            });
+
+            if (folder === undefined || folder.uri.scheme === fileSystemScheme) {
+                break;
+            }
+        }
+
+        return folder;
     }
 
     private async searchForRepositories(query: string, cancellation: CancellationTokenSource) {

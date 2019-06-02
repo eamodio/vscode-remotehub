@@ -10,7 +10,8 @@ NOTE: This extension is in the **very** early stages and is likely to have lots 
 - Adds a `Open GitHub Repository in New Window...` command (`remotehub.openRepositoryInNewWindow`) which allows you to search for a remote GitHub repository to open in a new window
 - Adds a `Add GitHub Repository to Workspace...` command (`remotehub.addRepository`) which allows you to search for a remote GitHub repository to add to the current workspace
 - Adds a `Clone GitHub Repository...` command (`remotehub.cloneRepository`) which allows you to search for a remote GitHub repository to clone
-- Adds a `Clone Opened GitHub Repository...` command (`remotehub.cloneOpenedRepository`) which allows you to clone an opened remote GitHub repository
+- Adds a `Clone Current Remote Repository...` command (`remotehub.cloneCurrentRepository`) which allows you to clone an opened remote GitHub repository
+- Adds a `Open Current Remote Repository on GitHub...` command (`remotehub.openCurrentRepositoryOnGitHub`) which allows you to clone an opened remote GitHub repository
 - Adds support for a `remotehub://` uri scheme, e.g. `remotehub://github.com/eamodio/vscode-remotehub` which can be saved into a workspace
 
 ## Requirements
