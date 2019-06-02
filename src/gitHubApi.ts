@@ -2,13 +2,25 @@
 import * as Github from '@octokit/rest';
 import { GraphQLClient } from 'graphql-request';
 import { Variables } from 'graphql-request/dist/src/types';
-import { ConfigurationChangeEvent, Disposable, Uri, workspace } from 'vscode';
+import { CancellationToken, ConfigurationChangeEvent, Disposable, Range, Uri, workspace } from 'vscode';
 import { configuration } from './configuration';
 import { Logger } from './logger';
 import { Iterables } from './system';
 import { fromRemoteHubUri } from './uris';
 
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
+
+export interface SearchQueryMatch {
+    path: string;
+    ranges: Range[];
+    preview: string;
+    matches: Range[];
+}
+
+export interface SearchQueryResults {
+    matches: SearchQueryMatch[];
+    limitHit: boolean;
+}
 
 export class GitHubApi implements Disposable {
     private readonly _disposable: Disposable;
@@ -59,9 +71,7 @@ export class GitHubApi implements Disposable {
         const [owner, repo] = fromRemoteHubUri(uri);
         try {
             const resp = await new Github({
-                headers: {
-                    Authorization: `Bearer ${this.token}`
-                }
+                auth: `token ${this.token}`
             }).git.getTree({
                 owner: owner,
                 repo: repo,
@@ -76,6 +86,78 @@ export class GitHubApi implements Disposable {
         catch (ex) {
             Logger.error(ex);
             return [];
+        }
+    }
+
+    async searchQuery(
+        query: string,
+        uri: Uri,
+        options: { maxResults?: number; context?: { before?: number; after?: number } },
+        token: CancellationToken
+    ): Promise<SearchQueryResults> {
+        const [owner, repo] = fromRemoteHubUri(uri);
+        try {
+            const resp = (await new Github({
+                auth: `token ${this.token}`,
+                headers: {
+                    accept: 'application/vnd.github.v3.text-match+json'
+                }
+            }).search.code({
+                q: `${query} repo:${owner}/${repo}`
+            })) as Github.Response<GitHubSearchResponse>;
+
+            // Since GitHub doesn't return ANY line numbers just fake it at the top of the file 😢
+            const range = new Range(0, 0, 0, 0);
+
+            const matches: SearchQueryMatch[] = [];
+
+            let counter = 0;
+            let match: SearchQueryMatch;
+            for (const item of resp.data.items) {
+                for (const m of item.text_matches) {
+                    counter++;
+                    if (options.maxResults !== undefined && counter > options.maxResults) {
+                        return { matches: matches, limitHit: true };
+                    }
+
+                    match = {
+                        path: item.path,
+                        ranges: [],
+                        preview: m.fragment,
+                        matches: []
+                    };
+
+                    for (const lm of m.matches) {
+                        let line = 0;
+                        let shartChar = 0;
+                        let endChar = 0;
+                        for (let i = 0; i < lm.indices[1]; i++) {
+                            if (i === lm.indices[0]) {
+                                shartChar = endChar;
+                            }
+
+                            if (m.fragment[i] === '\n') {
+                                line++;
+                                endChar = 0;
+                            }
+                            else {
+                                endChar++;
+                            }
+                        }
+
+                        match.ranges.push(range);
+                        match.matches.push(new Range(line, shartChar, line, endChar));
+                    }
+
+                    matches.push(match);
+                }
+            }
+
+            return { matches: matches, limitHit: false };
+        }
+        catch (ex) {
+            Logger.error(ex);
+            return { matches: [], limitHit: true };
         }
     }
 
@@ -208,4 +290,47 @@ export interface Repository {
     description: string;
     url: string;
     nameWithOwner: string;
+}
+
+export interface GitHubSearchResponse {
+    total_count: number;
+    incomplete_results: boolean;
+    items: Item[];
+}
+
+export interface Item {
+    name: string;
+    path: string;
+    sha: string;
+    url: string;
+    git_url: string;
+    html_url: string;
+    score: number;
+    text_matches: TextMatch[];
+}
+
+export interface TextMatch {
+    object_url: string;
+    object_type: ObjectType;
+    property: Property;
+    fragment: string;
+    matches: Match[];
+}
+
+export interface Match {
+    text: Text;
+    indices: number[];
+}
+
+export enum Text {
+    Command = 'Command',
+    TextCommand = 'command'
+}
+
+export enum ObjectType {
+    FileContent = 'FileContent'
+}
+
+export enum Property {
+    Content = 'content'
 }

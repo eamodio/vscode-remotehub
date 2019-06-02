@@ -23,6 +23,18 @@ import { fromRemoteHubUri, toRemoteHubUri, toSourcegraphUri } from './uris';
 
 const hoverTypeRegex = /\*\*(.*)?\*\*(?: _\((.*)\)_)?/;
 
+export interface SearchQueryMatch {
+    path: string;
+    ranges: Range[];
+    preview: string;
+    matches: Range[];
+}
+
+export interface SearchQueryResults {
+    matches: SearchQueryMatch[];
+    limitHit: boolean;
+}
+
 interface WorkspaceFolderMetadata {
     capabilities?: LspCapabilities;
     repo: { languageId: string | undefined; revision: string | undefined };
@@ -199,7 +211,12 @@ export class SourcegraphApi implements Disposable {
         return locations;
     }
 
-    async searchQuery(query: string, uri: Uri, token: CancellationToken) {
+    async searchQuery(
+        query: string,
+        uri: Uri,
+        options: { maxResults?: number; context?: { before?: number; after?: number } },
+        token: CancellationToken
+    ): Promise<SearchQueryResults> {
         try {
             const graphQuery = `query search($query: String!) {
                 search(query: $query) {
@@ -241,11 +258,41 @@ export class SourcegraphApi implements Disposable {
                     };
                 };
             }>(graphQuery, variables);
-            return rsp.search.results.results.filter(m => m.resource);
+
+            const matches: SearchQueryMatch[] = [];
+
+            let counter = 0;
+            let match: SearchQueryMatch;
+            for (const m of rsp.search.results.results.filter(m => m.resource)) {
+                const path = Uri.parse(m.resource).fragment;
+
+                for (const lm of m.lineMatches) {
+                    counter++;
+                    if (options.maxResults !== undefined && counter > options.maxResults) {
+                        return { matches: matches, limitHit: true };
+                    }
+
+                    match = {
+                        path: path,
+                        ranges: [],
+                        preview: lm.preview,
+                        matches: []
+                    };
+
+                    for (const [offset, length] of lm.offsetAndLengths) {
+                        match.ranges.push(new Range(lm.lineNumber, offset, lm.lineNumber, offset + length));
+                        match.matches.push(new Range(0, offset, 0, offset + length));
+                    }
+
+                    matches.push(match);
+                }
+            }
+
+            return { matches: matches, limitHit: false };
         }
         catch (ex) {
             Logger.error(ex);
-            return undefined;
+            return { matches: [], limitHit: true };
         }
     }
 

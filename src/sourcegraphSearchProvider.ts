@@ -5,7 +5,6 @@ import {
     FileSearchProvider,
     FileSearchQuery,
     Progress,
-    Range,
     TextSearchComplete,
     TextSearchOptions,
     TextSearchProvider,
@@ -13,11 +12,16 @@ import {
     TextSearchResult,
     Uri
 } from 'vscode';
+import * as fuzzySort from 'fuzzysort';
 import { SourcegraphApi } from './sourcegraphApi';
 import { Iterables } from './system/iterable';
 import { joinPath } from './uris';
 
+const replaceBackslashRegex = /\\/g;
+
 export class SourceGraphSearchProvider implements FileSearchProvider, TextSearchProvider {
+    private _cache = new Map<string, Fuzzysort.Prepared[]>();
+
     constructor(private readonly _sourcegraph: SourcegraphApi) {}
 
     async provideFileSearchResults(
@@ -25,10 +29,29 @@ export class SourceGraphSearchProvider implements FileSearchProvider, TextSearch
         options: FileSearchOptions,
         token: CancellationToken
     ): Promise<Uri[]> {
-        const matches = await this._sourcegraph.filesQuery(options.folder);
-        if (matches === undefined || token.isCancellationRequested) return [];
+        let searchable = this._cache.get(options.folder.toString(true));
+        if (searchable === undefined) {
+            const matches = await this._sourcegraph.filesQuery(options.folder);
+            if (matches === undefined || token.isCancellationRequested) return [];
 
-        const results = [...Iterables.map(matches, m => joinPath(options.folder, m))];
+            searchable = [...Iterables.map(matches, m => (fuzzySort as any).prepareSlow(m)! as Fuzzysort.Prepared)];
+            this._cache.set(options.folder.toString(true), searchable);
+        }
+
+        if (options.maxResults == null || options.maxResults === 0 || options.maxResults >= searchable.length) {
+            const results = searchable.map(m => joinPath(options.folder, m.target));
+            return results;
+        }
+
+        const results = fuzzySort
+            .go(query.pattern.replace(replaceBackslashRegex, '/'), searchable, {
+                allowTypo: true,
+                limit: options.maxResults
+            })
+            .map((m: any) => joinPath(options.folder, m.target));
+
+        (fuzzySort as any).cleanup();
+
         return results;
     }
 
@@ -58,39 +81,26 @@ export class SourceGraphSearchProvider implements FileSearchProvider, TextSearch
             sgQuery = ` case:yes ${sgQuery}`;
         }
 
-        const matches = await this._sourcegraph.searchQuery(sgQuery, options.folder, token);
-        if (matches === undefined) return { limitHit: true };
+        const results = await this._sourcegraph.searchQuery(
+            sgQuery,
+            options.folder,
+            { maxResults: options.maxResults, context: { before: options.beforeContext, after: options.afterContext } },
+            token
+        );
+        if (results === undefined) return { limitHit: true };
 
-        let counter = 0;
-        let docRanges: Range[];
-        let matchRanges: Range[];
         let uri;
-        for (const m of matches) {
-            const relativePath = Uri.parse(m.resource).fragment;
-            uri = joinPath(options.folder, relativePath);
+        for (const m of results.matches) {
+            uri = joinPath(options.folder, m.path);
 
-            for (const line of m.lineMatches) {
-                counter++;
-                if (counter > options.maxResults) {
-                    return { limitHit: true };
+            progress.report({
+                uri: uri,
+                ranges: m.ranges,
+                preview: {
+                    text: m.preview,
+                    matches: m.matches
                 }
-
-                docRanges = [];
-                matchRanges = [];
-                for (const [offset, length] of line.offsetAndLengths) {
-                    docRanges.push(new Range(line.lineNumber, offset, line.lineNumber, offset + length));
-                    matchRanges.push(new Range(0, offset, 0, offset + length));
-                }
-
-                progress.report({
-                    uri: uri,
-                    ranges: docRanges,
-                    preview: {
-                        text: line.preview,
-                        matches: matchRanges
-                    }
-                });
-            }
+            });
         }
 
         return { limitHit: false };
