@@ -154,9 +154,11 @@
     },
     "dependencies": {
         "@octokit/rest": "16.27.3",
+        "@sourcegraph/lsp-client": "2.0.0-beta.2",
         "fuzzysort": "1.1.4",
         "graphql-request": "1.8.2",
-        "node-fetch": "2.6.0"
+        "node-fetch": "2.6.0",
+        "ws": "7.0.0"
     },
     "devDependencies": {
         "@types/node": "10.1.4",

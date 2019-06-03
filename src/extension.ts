@@ -9,6 +9,7 @@ import { Logger, TraceLevel } from './logger';
 import { RemoteLanguageProvider } from './remoteLanguageProvider';
 import { RemoteSearchProvider } from './remoteSearchProvider';
 import { SourcegraphApi } from './sourcegraphApi';
+import { SourcegraphLsp } from './sourcegraphLsp';
 
 export async function activate(context: ExtensionContext) {
     Logger.configure(context, configuration.get<TraceLevel>(configuration.name('outputLevel').value));
@@ -22,13 +23,15 @@ export async function activate(context: ExtensionContext) {
     }
 
     const sourcegraph = new SourcegraphApi();
+    const sourcegraphLsp = new SourcegraphLsp(sourcegraph);
     context.subscriptions.push(
         workspace.onDidChangeWorkspaceFolders(workspaceFoldersChanged),
         github,
         sourcegraph,
+        sourcegraphLsp,
         commands,
         new GitHubFileSystemProvider(github),
-        new RemoteLanguageProvider(sourcegraph),
+        new RemoteLanguageProvider(sourcegraphLsp),
         new RemoteSearchProvider(github, sourcegraph)
     );
 

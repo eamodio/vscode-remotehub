@@ -5,7 +5,7 @@ import { Variables } from 'graphql-request/dist/src/types';
 import { CancellationToken, ConfigurationChangeEvent, Disposable, Range, Uri, workspace } from 'vscode';
 import { configuration } from './configuration';
 import { Logger } from './logger';
-import { Iterables } from './system';
+import { debug, Iterables } from './system';
 import { fromRemoteHubUri } from './uris';
 
 const repositoryRegex = /^(?:https:\/\/github.com\/)?(.+?)\/(.+?)(?:\/|$)/i;
@@ -67,7 +67,10 @@ export class GitHubApi implements Disposable {
         return this._client;
     }
 
+    @debug()
     async filesQuery(uri: Uri) {
+        const cc = Logger.getCorrelationContext();
+
         const [owner, repo] = fromRemoteHubUri(uri);
         try {
             const resp = await new Github({
@@ -84,17 +87,20 @@ export class GitHubApi implements Disposable {
             );
         }
         catch (ex) {
-            Logger.error(ex);
+            Logger.error(ex, cc);
             return [];
         }
     }
 
+    @debug({ args: { 3: () => false } })
     async searchQuery(
         query: string,
         uri: Uri,
         options: { maxResults?: number; context?: { before?: number; after?: number } },
         token: CancellationToken
     ): Promise<SearchQueryResults> {
+        const cc = Logger.getCorrelationContext();
+
         const [owner, repo] = fromRemoteHubUri(uri);
         try {
             const resp = (await new Github({
@@ -156,7 +162,7 @@ export class GitHubApi implements Disposable {
             return { matches: matches, limitHit: false };
         }
         catch (ex) {
-            Logger.error(ex);
+            Logger.error(ex, cc);
             return { matches: [], limitHit: true };
         }
     }
@@ -169,7 +175,10 @@ export class GitHubApi implements Disposable {
         this._revisionForUriMap.set(uri.toString(), fileRevision);
     }
 
+    @debug({ args: { 1: () => false } })
     async fsQuery<T>(uri: Uri, innerQuery: string): Promise<T | undefined> {
+        const cc = Logger.getCorrelationContext();
+
         try {
             const query = `query fs($owner: String!, $repo: String!, $path: String) {
     repository(owner: $owner, name: $repo) {
@@ -180,7 +189,7 @@ export class GitHubApi implements Disposable {
 }`;
 
             const variables = GitHubApi.extractFSQueryVariables(uri);
-            Logger.log(`GitHub.fsQuery\n\t${query}\n\t${JSON.stringify(variables)}`);
+            Logger.debug(cc, `variables: ${JSON.stringify(variables)}`);
 
             const rsp = await this.client.request<{
                 repository: { object: T };
@@ -188,12 +197,15 @@ export class GitHubApi implements Disposable {
             return rsp.repository.object;
         }
         catch (ex) {
-            Logger.error(ex, 'GitHub.fsQuery');
+            Logger.error(ex, cc);
             return undefined;
         }
     }
 
+    @debug()
     async repositoryRevisionQuery(owner: string, repo: string): Promise<string | undefined> {
+        const cc = Logger.getCorrelationContext();
+
         try {
             const query = `query repo($owner: String!, $repo: String!) {
     repository(owner: $owner, name: $repo) {
@@ -206,7 +218,7 @@ export class GitHubApi implements Disposable {
 }`;
 
             const variables = { owner: owner, repo: repo };
-            Logger.log(`GitHub.repositoryRevisionQuery\n\t${query}\n\t${JSON.stringify(variables)}`);
+            Logger.debug(cc, `variables: ${JSON.stringify(variables)}`);
 
             const rsp = await this.client.request<{
                 repository: { defaultBranchRef: { target: { oid: string } } };
@@ -216,12 +228,15 @@ export class GitHubApi implements Disposable {
             return rsp.repository.defaultBranchRef.target.oid;
         }
         catch (ex) {
-            Logger.error(ex, 'GitHub.repositoryRevisionQuery');
+            Logger.error(ex, cc);
             return undefined;
         }
     }
 
+    @debug()
     async repositoriesQuery(rawQuery: string): Promise<Repository[]> {
+        const cc = Logger.getCorrelationContext();
+
         let searchQuery;
 
         const match = repositoryRegex.exec(rawQuery);
@@ -259,7 +274,7 @@ export class GitHubApi implements Disposable {
 }`;
 
             const variables = { query: searchQuery };
-            Logger.log(`GitHub.repositoriesQuery\n\t${query}\n\t${JSON.stringify(variables)}`);
+            Logger.debug(cc, `variables: ${JSON.stringify(variables)}`);
 
             const rsp = await this.client.request<{
                 search: { edges: { node: Repository }[] };
@@ -269,7 +284,7 @@ export class GitHubApi implements Disposable {
             return rsp.search.edges.map(e => e.node);
         }
         catch (ex) {
-            Logger.error(ex, 'GitHub.repositoriesQuery');
+            Logger.error(ex, cc);
             return [];
         }
     }
@@ -295,10 +310,10 @@ export interface Repository {
 export interface GitHubSearchResponse {
     total_count: number;
     incomplete_results: boolean;
-    items: Item[];
+    items: GitHubSearchItem[];
 }
 
-export interface Item {
+export interface GitHubSearchItem {
     name: string;
     path: string;
     sha: string;
@@ -306,31 +321,18 @@ export interface Item {
     git_url: string;
     html_url: string;
     score: number;
-    text_matches: TextMatch[];
+    text_matches: GitHubSearchTextMatch[];
 }
 
-export interface TextMatch {
+export interface GitHubSearchTextMatch {
     object_url: string;
-    object_type: ObjectType;
-    property: Property;
+    object_type: string;
+    property: string;
     fragment: string;
-    matches: Match[];
+    matches: GitHubSearchMatch[];
 }
 
-export interface Match {
-    text: Text;
+export interface GitHubSearchMatch {
+    text: string;
     indices: number[];
-}
-
-export enum Text {
-    Command = 'Command',
-    TextCommand = 'command'
-}
-
-export enum ObjectType {
-    FileContent = 'FileContent'
-}
-
-export enum Property {
-    Content = 'content'
 }

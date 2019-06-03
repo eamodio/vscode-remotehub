@@ -168,10 +168,6 @@ export class GitHubFileSystemProvider implements FileSystemProvider, Disposable 
         return data;
     }
 
-    private static bufferToUint8Array(buffer: Buffer): Uint8Array {
-        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-    }
-
     private static async downloadBinary(uri: Uri) {
         const resp = await fetch(uri.toString());
         return resp.buffer();

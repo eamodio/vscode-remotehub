@@ -18,6 +18,21 @@
             "sourceMaps": true
         },
         {
+            "name": "Launch RemoteHub (debug all)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--enable-proposed-api eamodio.remotehub"],
+            "env": {
+                "VSCODE_DEBUGGING_EXTENSION": "remotehub"
+            },
+            "cwd": "${workspaceFolder}",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            // "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/resources/app/out/vs/**"],
+            // "smartStep": true,
+            "sourceMaps": true
+        },
+        {
             "name": "Watch & Launch RemoteHub",
             "type": "extensionHost",
             "request": "launch",

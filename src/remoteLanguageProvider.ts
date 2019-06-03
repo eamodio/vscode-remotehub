@@ -2,11 +2,14 @@
 import {
     CancellationToken,
     Definition,
+    DefinitionLink,
     DefinitionProvider,
     Disposable,
+    DocumentSymbol,
     DocumentSymbolProvider,
     Hover,
     HoverProvider,
+    ImplementationProvider,
     languages,
     Location,
     Position,
@@ -20,7 +23,7 @@ import {
     WorkspaceSymbolProvider
 } from 'vscode';
 import { fileSystemScheme } from './constants';
-import { SourcegraphApi } from './sourcegraphApi';
+import { SourcegraphLsp } from './sourcegraphLsp';
 
 export class RemoteLanguageProvider
     implements
@@ -28,17 +31,19 @@ export class RemoteLanguageProvider
         Disposable,
         DocumentSymbolProvider,
         HoverProvider,
+        ImplementationProvider,
         ReferenceProvider,
         WorkspaceSymbolProvider {
     private readonly _disposable: Disposable;
 
-    constructor(private _sourcegraph: SourcegraphApi) {
+    constructor(private readonly _sourcegraph: SourcegraphLsp) {
         this._disposable = Disposable.from(
             languages.registerDefinitionProvider({ scheme: fileSystemScheme, language: '*' }, this),
-            languages.registerDocumentSymbolProvider({ scheme: fileSystemScheme, language: '*' }, this),
+            // languages.registerDocumentSymbolProvider({ scheme: fileSystemScheme, language: '*' }, this),
             languages.registerHoverProvider({ scheme: fileSystemScheme, language: '*' }, this),
             languages.registerReferenceProvider({ scheme: fileSystemScheme, language: '*' }, this),
-            languages.registerWorkspaceSymbolProvider(this)
+            languages.registerImplementationProvider({ scheme: fileSystemScheme, language: '*' }, this)
+            // languages.registerWorkspaceSymbolProvider(this)
         );
     }
 
@@ -50,16 +55,27 @@ export class RemoteLanguageProvider
         document: TextDocument,
         position: Position,
         token: CancellationToken
-    ): ProviderResult<Definition> {
+    ): ProviderResult<Definition | DefinitionLink[]> {
         return this._sourcegraph.definition(document, position, token);
     }
 
-    provideDocumentSymbols(document: TextDocument, token: CancellationToken): ProviderResult<SymbolInformation[]> {
+    provideDocumentSymbols(
+        document: TextDocument,
+        token: CancellationToken
+    ): ProviderResult<SymbolInformation[] | DocumentSymbol[]> {
         return this._sourcegraph.documentSymbols(document, token);
     }
 
     provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
         return this._sourcegraph.hover(document, position, token);
+    }
+
+    provideImplementation(
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken
+    ): ProviderResult<Definition | DefinitionLink[]> {
+        return this._sourcegraph.implementation(document, position, token);
     }
 
     provideReferences(
