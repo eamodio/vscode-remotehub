@@ -1,7 +1,6 @@
 images/*.pdn
 .github/**
 .vscode/**
-test/**
 node_modules/**
 src/**
 test/**
