@@ -1,3 +1,8 @@
+[![](https://vsmarketplacebadge.apphb.com/version-short/eamodio.remotehub.svg)](https://marketplace.visualstudio.com/items?itemName=eamodio.remotehub)
+[![](https://vsmarketplacebadge.apphb.com/downloads-short/eamodio.remotehub.svg)](https://marketplace.visualstudio.com/items?itemName=eamodio.remotehub)
+[![](https://vsmarketplacebadge.apphb.com/rating-short/eamodio.remotehub.svg)](https://marketplace.visualstudio.com/items?itemName=eamodio.remotehub)
+[![](https://img.shields.io/badge/vscode--dev--community-remotehub-blue.svg?logo=slack&labelColor=555555)](https://vscode-slack.amod.io)
+
 # RemoteHub
 
 RemoteHub is a **proof-of-concept** extension that allows for opening a remote [GitHub](https://github.com) repository as a workspace. Experimental code search and language services (go to definition, go to implementation, hovers, find references, etc) are provided by [Sourcegraph](https://sourcegraph.com) and will only work on public repositories that are enabled and supported by them.

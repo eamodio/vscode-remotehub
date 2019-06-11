@@ -23,7 +23,14 @@
     "main": "./dist/extension",
     "icon": "images/remotehub-icon.png",
     "preview": true,
-    "enableProposedApi": true,
+    "enableProposedApi": false,
+    "badges": [
+        {
+            "url": "https://img.shields.io/badge/vscode--dev--community-remotehub-blue.svg?logo=slack&labelColor=555555",
+            "href": "https://vscode-slack.amod.io",
+            "description": "Join us in the #remotehub channel"
+        }
+    ],
     "categories": [
         "Other"
     ],
