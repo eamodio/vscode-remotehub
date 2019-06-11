@@ -66,15 +66,16 @@ module.exports = function(env, argv) {
         },
         externals: {
             vscode: 'commonjs vscode',
-            bufferutil: 'bufferutil',
-            encoding: 'encoding',
-            'utf-8-validate': 'utf-8-validate'
+            bufferutil: 'commonjs bufferutil',
+            encoding: 'commonjs encoding',
+            'utf-8-validate': 'commonjs utf-8-validate'
         },
         module: {
             rules: [
                 {
-                    test: /\.ts$/,
                     enforce: 'pre',
+                    exclude: /node_modules|\.d\.ts$/,
+                    test: /\.tsx?$/,
                     use: [
                         {
                             loader: 'eslint-loader',
@@ -83,25 +84,17 @@ module.exports = function(env, argv) {
                                 failOnError: true
                             }
                         }
-                    ],
-                    exclude: /node_modules/
+                    ]
                 },
                 {
+                    exclude: /node_modules|\.d\.ts$/,
                     test: /\.tsx?$/,
-                    use: 'ts-loader',
-                    exclude: /node_modules|\.d\.ts$/
+                    use: 'ts-loader'
                 }
-            ],
-            // Removes `Critical dependency: the request of a dependency is an expression` from `./node_modules/vsls/vscode.js`
-            exprContextRegExp: /^$/,
-            exprContextCritical: false
+            ]
         },
         resolve: {
             extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
-            // alias: {
-            //     // Required because of https://github.com/bitinn/node-fetch/issues/493#issuecomment-414111024
-            //     'node-fetch': path.resolve(__dirname, 'node_modules/node-fetch/lib/index.js')
-            // }
         },
         plugins: plugins,
         stats: {
