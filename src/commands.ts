@@ -188,7 +188,7 @@ export class Commands implements Disposable {
             let query = await window.showInputBox({
                 placeHolder:
                     'e.g. vscode-gitlens, eamodio/, eamodio/vscode-gitlens, or https://github.com/eamodio/vscode-gitlens',
-                prompt: 'Enter a value or url to use to search for repositories',
+                prompt: 'Enter a value or url to use to search for repositories (add fork:true to include forks)',
                 value: initialValue,
                 ignoreFocusOut: true
             });
